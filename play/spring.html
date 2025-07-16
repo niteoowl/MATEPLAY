@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATEPLAY │ Spring</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Font: Inter (기본 폰트) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Pretendard 폰트 임포트 */
+        @font-face {
+            font-family: 'Pretendard-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif; /* 기본 body 폰트 */
+            background-color: #000; /* Netflix-like dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 변경: 뷰포트 전체를 차지하도록 설정 */
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        /* Custom scrollbar for better aesthetics if content overflows */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #222;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Custom styling for range input (progress bar, volume) */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #555;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+            border-radius: 2px;
+        }
+
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e50914; /* Netflix red */
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            margin-top: -6px; /* Adjust thumb position */
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #e50914; /* Netflix red */
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Specific styles for the progress bar track */
+        #progressBar::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #e50914 var(--progress-value, 0%), #555 var(--progress-value, 0%));
+            border-radius: 2px;
+            height: 4px;
+        }
+        #progressBar::-moz-range-track {
+            background: linear-gradient(to right, #e50914 var(--progress-value, 0%), #555 var(--progress-value, 0%));
+            border-radius: 2px;
+            height: 4px;
+        }
+
+        /* Custom style for active CC button */
+        .cc-active {
+            color: #e50914; /* Netflix red */
+        }
+
+        /* Subtitle styling for Netflix-like appearance */
+        video::cue {
+            color: white;
+            background-color: transparent; /* 명시적으로 투명 설정 */
+            text-shadow: 0px 0px 7px rgba(0, 0, 0, 0.7), 0px 0px 4px rgba(0, 0, 0, 0.5);
+            font-size: 1em; /* 더 작게 조정 */
+            font-weight: 700; /* 텍스트 굵기 700으로 설정 */
+            text-align: center;
+            line-height: 1.1em; /* 자막 줄 간격을 줄여서 전체적으로 위로 올림 */
+            line: 90%; /* 하단에서 10% 지점 (기본) */
+        }
+
+        /* Subtitle position when controls are active */
+        #player-container.controls-active video::cue {
+            line: 80%; /* 컨트롤 바 위로 이동 */
+        }
+
+        /* Subtitle position when video is hovered (highest priority) */
+        video.hovering::cue {
+            line: 70%; /* 마우스 움직이면 재생바 위로 살짝 올림 */
+        }
+
+        /* Seek Feedback Overlay Styling */
+        #seekFeedback {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 25%; /* 효과가 표시될 영역의 너비 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-align: center;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none; /* 클릭 이벤트가 비디오로 전달되도록 함 */
+            z-index: 20;
+        }
+        #seekFeedback.seek-left {
+            left: 0;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.7), transparent);
+            transform: translateX(-100%); /* 초기 숨김 상태 */
+        }
+        #seekFeedback.seek-right {
+            right: 0;
+            background: linear-gradient(to left, rgba(0, 0, 0, 0.7), transparent);
+            transform: translateX(100%); /* 초기 숨김 상태 */
+        }
+        #seekFeedback.show {
+            opacity: 1;
+            transform: translateX(0%); /* 표시 상태 */
+        }
+        #seekFeedback i {
+            font-size: 3rem; /* 아이콘 크기 */
+        }
+        #seekFeedback span {
+            font-size: 1.5rem; /* 텍스트 크기 */
+            font-weight: bold;
+        }
+
+        /* Loading Overlay Styling */
+        #loading-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.9); /* 더 어두운 배경 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 30; /* Seek feedback보다 위에 오도록 */
+            opacity: 1; /* 초기에는 보이도록 */
+            transition: opacity 0.5s ease-out;
+        }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none; /* 숨겨졌을 때 클릭 이벤트 방지 */
+        }
+        #loading-overlay img {
+            max-width: 150px; /* 이미지 크기 조정 */
+            height: auto;
+            animation: pulse 1.5s infinite ease-in-out; /* 부드러운 맥박 효과 */
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.9);
+                opacity: 0.7;
+            }
+        }
+
+        /* Default hidden state for controls */
+        #top-overlay, #control-bar {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-out;
+        }
+
+        /* Visible state for controls */
+        #player-container.controls-active #top-overlay,
+        #player-container.controls-active #control-bar {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Play Overlay Styling */
+        #playOverlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.3); /* 반투명 배경 */
+            z-index: 25; /* 로딩 오버레이와 컨트롤 바 사이 */
+            cursor: pointer;
+            opacity: 1;
+            transition: opacity 0.3s ease-out;
+        }
+        #playOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #playOverlay i {
+            font-size: 8rem; /* 큰 재생 아이콘 */
+            color: white;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        #playOverlay i:hover {
+            opacity: 1;
+        }
+
+        /* Custom Modal Styling */
+        #customModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000; /* Ensure it's on top */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+        }
+        #customModal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #222;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 400px;
+            color: white;
+            font-family: 'Pretendard-Regular', sans-serif;
+        }
+        .modal-content h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .modal-content p {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .modal-content button {
+            background-color: #e50914;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .modal-content button:hover {
+            background-color: #ff0000;
+        }
+    </style>
+</head>
+<body class="bg-black text-white">
+
+    <div id="player-container" class="relative w-full h-full bg-black rounded-lg overflow-hidden shadow-2xl">
+        <!-- Main Video Area -->
+        <div class="absolute inset-0 bg-black">
+            <!-- autoplay 및 muted 속성 제거 -->
+            <video id="videoPlayer" class="w-full h-full object-contain" src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Spring_-_Blender_Open_Movie.webm" controlsList="nodownload nofullscreen noremoteplayback" crossorigin="anonymous"></video>
+        </div>
+
+        <!-- Seek Feedback Overlay -->
+        <div id="seekFeedback">
+            <i id="seekIcon" class="fas"></i>
+            <span id="seekText"></span>
+        </div>
+
+        <!-- Top Overlay - Always visible -->
+        <div id="top-overlay" class="absolute top-0 left-0 right-0 px-4 py-1 bg-gradient-to-b from-black/70 to-transparent">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button class="text-white text-2xl hover:text-gray-300 transition-colors rounded-full p-2">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <span class="text-xl font-semibold">Spring</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="text-white text-xl hover:text-gray-300 transition-colors rounded-full p-2">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <!-- 다운로드 버튼 삭제 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay">
+            <img src="https://i.postimg.cc/hjK3mt5K/002-25.png" alt="Loading Spinner">
+        </div>
+
+        <!-- Play Overlay (중앙 재생 버튼) -->
+        <div id="playOverlay" class="absolute inset-0 flex items-center justify-center bg-black/30 z-20 cursor-pointer hidden">
+            <i class="fas fa-play text-white text-8xl opacity-70 hover:opacity-100 transition-opacity"></i>
+        </div>
+
+        <!-- Control Bar - Always visible -->
+        <div id="control-bar" class="absolute bottom-0 left-0 right-0 px-3 py-1 bg-gradient-to-t from-black/50 to-transparent">
+            <!-- Progress Bar -->
+            <div class="flex items-center mb-2">
+                <input type="range" id="progressBar" min="0" max="100" value="0" class="w-full h-1 bg-gray-700 appearance-none rounded-full cursor-pointer">
+            </div>
+
+            <div class="flex items-center justify-between text-white text-sm">
+                <!-- Left Controls -->
+                <div class="flex items-center space-x-4">
+                    <button id="playPauseBtn" class="text-3xl hover:text-gray-300 transition-colors rounded-full p-2 w-12 h-12 flex items-center justify-center">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button class="text-xl hover:text-gray-300 transition-colors rounded-full p-2">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <span id="currentTime" class="min-w-[48px]">00:00</span>
+                    <span class="mx-1">/</span>
+                    <span id="totalTime">00:00</span>
+                </div>
+
+                <!-- Right Controls -->
+                <div class="flex items-center space-x-4">
+                    <!-- Volume control with absolute positioning -->
+                    <div class="flex items-center group relative">
+                        <button id="volumeBtn" class="text-xl hover:text-gray-300 transition-colors rounded-full p-2">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <input type="range" id="volumeBar" min="0" max="100" value="50"
+                            class="absolute w-20 h-1 bg-gray-700 appearance-none rounded-full cursor-pointer
+                                   opacity-0 invisible transition-all duration-200 ease-out
+                                   left-[calc(100% + 40px)] top-1/2 -translate-y-1/2
+                                   group-hover:opacity-100 group-hover:visible group-hover:left-[calc(100% + 10px)]">
+                    </div>
+                    <button id="ccBtn" class="text-xl hover:text-gray-300 transition-colors rounded-full p-2">
+                        <i class="fas fa-closed-captioning"></i>
+                    </button>
+                    <button class="text-xl hover:text-gray-300 transition-colors rounded-full p-2">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button id="fullscreenBtn" class="text-xl hover:text-gray-300 transition-colors rounded-full p-2">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Alerts -->
+    <div id="customModal" class="hidden">
+        <div class="modal-content">
+            <h2 id="modalTitle"></h2>
+            <p id="modalMessage"></p>
+            <button id="modalCloseBtn">확인</button>
+        </div>
+    </div>
+
+    <script>
+        const playerContainer = document.getElementById('player-container');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = playPauseBtn.querySelector('i');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeSpan = document.getElementById('currentTime');
+        const totalTimeSpan = document.getElementById('totalTime');
+        const volumeBtn = document.getElementById('volumeBtn');
+        const volumeIcon = volumeBtn.querySelector('i');
+        const volumeBar = document.getElementById('volumeBar');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const topOverlay = document.getElementById('top-overlay');
+        const controlBar = document.getElementById('control-bar');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const playOverlay = document.getElementById('playOverlay'); // Newly added central play button overlay
+        const ccBtn = document.getElementById('ccBtn');
+        const ccIcon = ccBtn.querySelector('i');
+        const seekFeedback = document.getElementById('seekFeedback');
+        const seekIcon = document.getElementById('seekIcon');
+        const seekText = document.getElementById('seekText');
+        const customModal = document.getElementById('customModal'); // Custom modal element
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+
+        let isPlaying = false;
+        let isMuted = false; // Changed to false as HTML muted attribute is removed
+        let currentVolume = 50; // Default volume to be set by the user
+        let currentTrackIndex = -1;
+        let subtitleBlobUrl = null;
+
+        let lastClickTime = 0;
+        let clickTimeout = null;
+        const DOUBLE_CLICK_THRESHOLD = 300; // ms
+
+        // Variable for auto-hide controls timer
+        let controlsHideTimeout;
+
+        // Function to format time to HH:MM:SS
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            const formattedH = h > 0 ? String(h).padStart(2, '0') + ':' : '';
+            const formattedM = String(m).padStart(2, '0');
+            const formattedS = String(s).padStart(2, '0');
+            return `${formattedH}${formattedM}:${formattedS}`;
+        }
+
+        // Function to update CC button visual state
+        function updateCcButtonState() {
+            if (currentTrackIndex !== -1 && videoPlayer.textTracks[currentTrackIndex] && videoPlayer.textTracks[currentTrackIndex].mode === 'showing') {
+                ccIcon.classList.add('cc-active');
+            } else {
+                ccIcon.classList.remove('cc-active');
+            }
+        }
+
+        // Function to convert SRT content to VTT format
+        function srtToVtt(srtContent) {
+            let vttContent = 'WEBVTT\n\n';
+            const srtCues = srtContent.split(/\r?\n\r?\n/).filter(block => block.trim() !== '');
+
+            srtCues.forEach(cueBlock => {
+                const lines = cueBlock.split(/\r?\n/);
+                if (lines.length >= 2) {
+                    const timeLine = lines[1];
+                    const textLines = lines.slice(2);
+                    const vttTimeLine = timeLine.replace(/,/g, '.');
+                    // Add line:90% to the time line
+                    vttContent += `${vttTimeLine} line:90%\n`;
+                    vttContent += `${textLines.join('\n')}\n\n`;
+                }
+            });
+            return vttContent;
+        }
+
+        // Function to load and process subtitles
+        async function loadSubtitles(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const srtContent = await response.text();
+                const vttContent = srtToVtt(srtContent);
+
+                if (subtitleBlobUrl) {
+                    URL.revokeObjectURL(subtitleBlobUrl);
+                }
+
+                const blob = new Blob([vttContent], { type: 'text/vtt' });
+                subtitleBlobUrl = URL.createObjectURL(blob);
+
+                while (videoPlayer.querySelector('track')) {
+                    videoPlayer.removeChild(videoPlayer.querySelector('track'));
+                }
+
+                const track = document.createElement('track');
+                track.kind = 'subtitles';
+                track.src = subtitleBlobUrl;
+                track.srclang = 'ko';
+                track.label = 'Korean';
+                track.default = true;
+                videoPlayer.appendChild(track);
+
+                track.addEventListener('load', () => {
+                    for (let i = 0; i < videoPlayer.textTracks.length; i++) {
+                        if (videoPlayer.textTracks[i] === track) {
+                            videoPlayer.textTracks[i].mode = 'showing';
+                            currentTrackIndex = i;
+                            break;
+                        } else {
+                            videoPlayer.textTracks[i].mode = 'hidden';
+                        }
+                    }
+                    updateCcButtonState();
+                });
+
+            } catch (error) {
+                console.error('Error loading or processing subtitles:', error);
+            }
+        }
+
+        // Function to display Seek Feedback (including icon and text)
+        let seekFeedbackTimeout;
+        function showSeekFeedback(direction) {
+            seekFeedback.classList.remove('seek-left', 'seek-right', 'show');
+
+            if (direction === '+5s') {
+                seekIcon.className = 'fas fa-forward';
+                seekText.textContent = '+5s';
+                seekFeedback.classList.add('seek-right');
+            } else {
+                seekIcon.className = 'fas fa-backward';
+                seekText.textContent = '-5s';
+                seekFeedback.classList.add('seek-left');
+            }
+
+            requestAnimationFrame(() => {
+                seekFeedback.classList.add('show');
+            });
+
+            clearTimeout(seekFeedbackTimeout);
+            seekFeedbackTimeout = setTimeout(() => {
+                seekFeedback.classList.remove('show');
+            }, 700);
+        }
+
+        // Function to show control bar
+        function showControls() {
+            playerContainer.classList.add('controls-active');
+            clearTimeout(controlsHideTimeout); // Clear existing timer
+            controlsHideTimeout = setTimeout(hideControls, 5000); // Set timer to hide after 5 seconds
+        }
+
+        // Function to hide control bar
+        function hideControls() {
+            // Check if mouse is over the player container, if not, hide controls
+            // Or if video is not paused, hide controls
+            if (videoPlayer.paused) {
+                // If paused, controls should stay visible (as per previous request)
+                playerContainer.classList.add('controls-active'); // Ensure they are active
+                clearTimeout(controlsHideTimeout); // Clear any pending hide
+            } else if (!playerContainer.matches(':hover')) {
+                // If playing and mouse is out, hide controls
+                playerContainer.classList.remove('controls-active');
+            } else {
+                // If playing and mouse is still in, reschedule hide
+                clearTimeout(controlsHideTimeout);
+                controlsHideTimeout = setTimeout(hideControls, 5000);
+            }
+        }
+
+        // Function to show custom modal
+        function showModal(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
+            customModal.classList.add('show');
+        }
+
+        // Function to hide custom modal
+        function hideModal() {
+            customModal.classList.remove('show');
+            customModal.classList.add('hidden');
+        }
+
+        // Event listener for modal close button
+        modalCloseBtn.addEventListener('click', hideModal);
+
+
+        // Event listener when video metadata is loaded (to get actual playback time)
+        videoPlayer.addEventListener('loadedmetadata', () => {
+            totalTimeSpan.textContent = formatTime(videoPlayer.duration);
+            progressBar.max = videoPlayer.duration;
+            // Removed subtitle loading for Sintel, as the new video might not have corresponding subtitles.
+            // loadSubtitles('https://play.nmate.kr/subtitle/sintel.srt');
+        });
+
+        // Play/Pause Toggle
+        playPauseBtn.addEventListener('click', () => {
+            if (videoPlayer.paused || videoPlayer.ended) {
+                videoPlayer.play();
+            } else {
+                videoPlayer.pause();
+            }
+            showControls(); // Keep controls visible when button is clicked
+        });
+
+        // Update progress bar and current time as video plays
+        videoPlayer.addEventListener('timeupdate', () => {
+            progressBar.value = videoPlayer.currentTime;
+            updateProgressBarFill(videoPlayer.currentTime / videoPlayer.duration * 100);
+            currentTimeSpan.textContent = formatTime(videoPlayer.currentTime);
+        });
+
+        // Progress Bar Interaction (seeking)
+        progressBar.addEventListener('input', (e) => {
+            const seekTime = parseFloat(e.target.value);
+            videoPlayer.currentTime = seekTime;
+            loadingOverlay.classList.remove('hidden'); // Show loading overlay when seeking starts
+            showControls(); // Keep controls visible during seeking
+        });
+
+        // Update progress bar fill color
+        function updateProgressBarFill(percentage) {
+            progressBar.style.setProperty('--progress-value', `${percentage}%`);
+        }
+        updateProgressBarFill(0); // Initially 0%
+
+        // Volume Toggle
+        volumeBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            videoPlayer.muted = isMuted;
+            if (isMuted) {
+                volumeIcon.classList.remove('fa-volume-up');
+                volumeIcon.classList.add('fa-volume-mute');
+                volumeBar.value = 0;
+            } else {
+                volumeIcon.classList.remove('fa-volume-mute');
+                volumeIcon.classList.add('fa-volume-up');
+                videoPlayer.volume = currentVolume / 100; // Restore previous volume
+                volumeBar.value = currentVolume;
+            }
+            showControls(); // Keep controls visible when button is clicked
+        });
+
+        // Volume Bar Interaction
+        volumeBar.addEventListener('input', (e) => {
+            currentVolume = e.target.value;
+            videoPlayer.volume = currentVolume / 100; // Set video volume (0-1)
+            if (currentVolume == 0) {
+                volumeIcon.classList.remove('fa-volume-up');
+                volumeIcon.classList.add('fa-volume-mute');
+                isMuted = true;
+            } else {
+                volumeIcon.classList.remove('fa-volume-mute');
+                volumeIcon.classList.add('fa-volume-up');
+                isMuted = false;
+            }
+            showControls(); // Keep controls visible when adjusting volume
+        });
+        videoPlayer.volume = currentVolume / 100; // Set initial volume
+
+        // Fullscreen Toggle
+        fullscreenBtn.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                playerContainer.requestFullscreen().catch(err => {
+                    console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                });
+            }
+            showControls(); // Keep controls visible when button is clicked
+        });
+
+        // Subtitle Toggle (CC button)
+        ccBtn.addEventListener('click', () => {
+            const textTracks = videoPlayer.textTracks;
+            const subtitleTracks = [];
+            for (let i = 0; i < textTracks.length; i++) {
+                if (textTracks[i].kind === 'subtitles' || textTracks[i].kind === 'captions') {
+                    subtitleTracks.push(textTracks[i]);
+                }
+            }
+
+            if (subtitleTracks.length === 0) {
+                // Display custom message if no subtitle tracks are found
+                showModal('자막 없음', '이 영화는 자막이 없는 무대사 영화예요.');
+                currentTrackIndex = -1;
+                updateCcButtonState();
+                return;
+            }
+
+            for (let i = 0; i < subtitleTracks.length; i++) {
+                subtitleTracks[i].mode = 'hidden';
+            }
+
+            let nextIndexInSubtitleTracks = -1;
+            if (currentTrackIndex !== -1 && (videoPlayer.textTracks[currentTrackIndex].kind === 'subtitles' || videoPlayer.textTracks[currentTrackIndex].kind === 'captions')) {
+                const currentSubtitleTrack = videoPlayer.textTracks[currentTrackIndex];
+                const currentSubtitleTrackIdx = subtitleTracks.indexOf(currentSubtitleTrack);
+                if (currentSubtitleTrackIdx !== -1) {
+                    nextIndexInSubtitleTracks = (currentSubtitleTrackIdx + 1) % (subtitleTracks.length + 1);
+                } else {
+                    nextIndexInSubtitleTracks = 0;
+                }
+            } else {
+                nextIndexInSubtitleTracks = 0;
+            }
+
+            if (nextIndexInSubtitleTracks < subtitleTracks.length) {
+                subtitleTracks[nextIndexInSubtitleTracks].mode = 'showing';
+                currentTrackIndex = Array.prototype.indexOf.call(videoPlayer.textTracks, subtitleTracks[nextIndexInSubtitleTracks]);
+                console.log(`Track displayed: ${subtitleTracks[nextIndexInSubtitleTracks].label}`);
+            } else {
+                currentTrackIndex = -1;
+                console.log('Subtitles off');
+            }
+            updateCcButtonState();
+            showControls(); // Keep controls visible when button is clicked
+        });
+
+
+        window.onload = () => {
+            videoPlayer.load();
+            loadingOverlay.classList.remove('hidden'); // Ensure loading is visible initially
+            playOverlay.classList.add('hidden'); // Ensure play overlay is hidden initially
+            playPauseIcon.classList.remove('fa-pause');
+            playPauseIcon.classList.add('fa-play'); // Initial state is paused
+            
+            // Set initial volume icon and bar state (start unmuted)
+            volumeIcon.classList.remove('fa-volume-mute');
+            volumeIcon.classList.add('fa-volume-up');
+            volumeBar.value = currentVolume;
+            videoPlayer.muted = false; // Video starts unmuted
+            videoPlayer.volume = currentVolume / 100; // Set initial volume
+            isMuted = false;
+        };
+
+        // When enough data is loaded to play the first frame
+        videoPlayer.addEventListener('loadeddata', () => {
+            loadingOverlay.classList.add('hidden'); // Hide loading spinner
+            // If video is already paused at loadeddata, show playOverlay
+            if (videoPlayer.paused) {
+                playOverlay.classList.remove('hidden');
+            }
+            showControls(); // Show controls when video loads (auto-hide after 5 seconds)
+        });
+
+        // Update icon and loading overlay based on video playback state
+        videoPlayer.addEventListener('playing', () => {
+            playPauseIcon.classList.remove('fa-play');
+            playPauseIcon.classList.add('fa-pause');
+            loadingOverlay.classList.add('hidden');
+            playOverlay.classList.add('hidden'); // Hide play overlay when playing
+        });
+
+        videoPlayer.addEventListener('pause', () => {
+            playPauseIcon.classList.remove('fa-pause');
+            playPauseIcon.classList.add('fa-play');
+            // playOverlay.classList.remove('hidden'); // Removed: Do not show play overlay on every pause
+            showControls(); // Show controls when paused
+        });
+
+        videoPlayer.addEventListener('waiting', () => {
+            loadingOverlay.classList.remove('hidden');
+        });
+
+        videoPlayer.addEventListener('seeking', () => {
+            loadingOverlay.classList.remove('hidden');
+        });
+
+        videoPlayer.addEventListener('seeked', () => {
+            loadingOverlay.classList.add('hidden');
+        });
+
+        // Clean up Blob URL when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (subtitleBlobUrl) {
+                URL.revokeObjectURL(subtitleBlobUrl);
+            }
+        });
+
+        // Keyboard event listener
+        document.addEventListener('keydown', (e) => {
+            if (isNaN(videoPlayer.duration) || !isFinite(videoPlayer.duration)) {
+                console.warn("Video duration is not available or not finite. Cannot seek.");
+                return;
+            }
+
+            if (e.key === 'ArrowLeft') {
+                videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 5);
+                showSeekFeedback('-5s');
+                showControls(); // Keep controls visible during keyboard seeking
+            } else if (e.key === 'ArrowRight') {
+                videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 5);
+                showSeekFeedback('+5s');
+                showControls(); // Keep controls visible during keyboard seeking
+            } else if (e.key === ' ' || e.key === 'k') {
+                e.preventDefault();
+                playPauseBtn.click(); // playPauseBtn.click() calls showControls
+            }
+        });
+
+        // Detect mouse movement and show/hide controls
+        playerContainer.addEventListener('mousemove', showControls);
+        playerContainer.addEventListener('mouseleave', hideControls);
+
+        // Central play button click listener
+        playOverlay.addEventListener('click', () => {
+            videoPlayer.play();
+        });
+
+        // Single click/tap to toggle controls, double click/tap to seek
+        videoPlayer.addEventListener('click', (e) => {
+            const now = performance.now();
+            const rect = videoPlayer.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const videoWidth = rect.width;
+            const middle = videoWidth / 2;
+
+            const side = clickX < middle ? 'left' : 'right';
+
+            if (now - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
+                // Double click detected - perform seek
+                if (clickTimeout) {
+                    clearTimeout(clickTimeout);
+                    clickTimeout = null;
+                }
+
+                if (isNaN(videoPlayer.duration) || !isFinite(videoPlayer.duration)) {
+                    console.warn("Video duration is not available or not finite. Cannot seek.");
+                    return;
+                }
+
+                if (side === 'left') {
+                    videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 5);
+                    showSeekFeedback('-5s');
+                } else {
+                    videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 5);
+                    showSeekFeedback('+5s');
+                }
+                loadingOverlay.classList.remove('hidden'); // Show loading when seeking
+                showControls(); // Keep controls visible after seeking
+                lastClickTime = 0; // Reset for next double click
+            } else {
+                // First click of a potential double click or single click
+                lastClickTime = now;
+                if (clickTimeout) {
+                    clearTimeout(clickTimeout);
+                }
+                clickTimeout = setTimeout(() => {
+                    // Single click - toggle controls
+                    if (playerContainer.classList.contains('controls-active')) {
+                        hideControls();
+                    } else {
+                        showControls();
+                    }
+                    lastClickTime = 0; // Reset
+                    clickTimeout = null;
+                }, DOUBLE_CLICK_THRESHOLD);
+            }
+        });
+
+        // Touch event listener (mobile double tap)
+        let touchStartTime = 0;
+        let tapCount = 0;
+
+        videoPlayer.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const now = performance.now();
+                const touch = e.touches[0];
+                const rect = videoPlayer.getBoundingClientRect();
+                const touchX = touch.clientX - rect.left;
+                const videoWidth = rect.width;
+                const middle = videoWidth / 2;
+
+                const side = touchX < middle ? 'left' : 'right';
+
+                tapCount++;
+
+                if (tapCount === 1) {
+                    touchStartTime = now;
+                    if (clickTimeout) clearTimeout(clickTimeout); // Clear existing click timer
+                    clickTimeout = setTimeout(() => {
+                        // Single tap - toggle controls
+                        if (playerContainer.classList.contains('controls-active')) {
+                            hideControls();
+                        } else {
+                            showControls();
+                        }
+                        tapCount = 0; // Reset for next tap
+                        clickTimeout = null;
+                    }, DOUBLE_CLICK_THRESHOLD);
+                } else if (tapCount === 2) {
+                    if (now - touchStartTime < DOUBLE_CLICK_THRESHOLD) {
+                        // Double tap detected - perform seek
+                        if (clickTimeout) clearTimeout(clickTimeout); // Clear single tap timer
+                        clickTimeout = null;
+
+                        if (isNaN(videoPlayer.duration) || !isFinite(videoPlayer.duration)) {
+                            console.warn("Video duration is not available or not finite. Cannot seek.");
+                        } else {
+                            if (side === 'left') {
+                                videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 5);
+                                showSeekFeedback('-5s');
+                            } else {
+                                videoPlayer.currentTime = Math.min(videoPlayer.duration, videoPlayer.currentTime + 5);
+                                showSeekFeedback('+5s');
+                            }
+                        }
+                        loadingOverlay.classList.remove('hidden'); // Show loading when seeking
+                        showControls(); // Keep controls visible after seeking
+                    }
+                    tapCount = 0; // Reset for next tap sequence
+                    if (clickTimeout) clearTimeout(clickTimeout); // Ensure timer is cleared
+                    clickTimeout = null;
+                }
+            }
+        });
+
+        // Add mousemove listener directly to videoPlayer for subtitle hovering effect
+        videoPlayer.addEventListener('mousemove', () => {
+            videoPlayer.classList.add('hovering');
+
+            clearTimeout(videoPlayer._hoverTimeout);
+            videoPlayer._hoverTimeout = setTimeout(() => {
+                videoPlayer.classList.remove('hovering');
+            }, 2000); // 2초 후 다시 아래로
+        });
+
+    </script>
+</body>
+</html>
