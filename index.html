@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATEPLAY - 당신의 엔터테인먼트 허브</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #141414; /* Dark background */
+            color: #E5E5E5; /* Light text */
+        }
+        /* Custom scrollbar for horizontal sections */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        /* Adjusted gradient-overlay for darker effect */
+        .gradient-overlay {
+            background: linear-gradient(to top, rgba(20, 20, 20, 1) 0%, rgba(20, 20, 20, 0.7) 50%, rgba(20, 20, 20, 0.7) 100%); /* Increased opacity */
+        }
+        .hero-background {
+            background-image: url('https://i.ytimg.com/vi/_cMxraX_5RE/maxresdefault.jpg'); /* Example background image */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        /* Custom stronger text shadow with more blur */
+        .text-shadow-strong {
+            text-shadow: 3px 3px 20px rgba(0, 0, 0, 1); /* Increased blur radius */
+        }
+        .text-shadow-medium {
+            text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.95); /* Increased blur radius */
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black to-transparent p-4 md:px-8 flex justify-between items-center">
+        <div class="flex items-center space-x-8">
+            <!-- MATEPLAY text replaced with image logo -->
+            <img src="https://i.postimg.cc/hjK3mt5K/002-25.png" alt="MATEPLAY Logo" class="h-8 md:h-10 w-auto rounded-lg">
+            <nav class="hidden md:flex space-x-6 text-lg">
+                <a href="#" class="hover:text-white transition duration-300">홈</a>
+                <a href="#" class="hover:text-white transition duration-300">영화</a>
+                <a href="#" class="hover:text-white transition duration-300">TV 프로그램</a>
+                <a href="#" class="hover:text-white transition duration-300">내가 찜한 콘텐츠</a>
+            </nav>
+        </div>
+        <div class="flex items-center space-x-6">
+            <button class="text-white hover:text-red-600 transition duration-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </button>
+            <a href="#" class="text-white hover:text-red-600 transition duration-300 hidden md:block">키즈</a>
+            <button class="text-white hover:text-red-600 transition duration-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative h-screen flex items-center justify-center overflow-hidden hero-background">
+        <div class="absolute inset-0 gradient-overlay z-10"></div>
+        <div class="relative z-20 text-left text-white p-4 md:p-8 max-w-4xl w-full">
+            <!-- Applied custom text shadow classes -->
+            <h2 class="text-4xl md:text-6xl font-bold mb-4 text-shadow-strong">Sprite Fright</h2>
+            <div class="flex items-center space-x-4 mb-4 text-lg md:text-xl font-medium text-shadow-medium">
+                <span>공포 · 코미디</span>
+                <span>2021</span>
+            </div>
+            <p class="text-lg md:text-xl mb-8 leading-relaxed text-shadow-medium">
+                숲 속으로 캠핑을 떠난 10대들이 귀엽지만 치명적인 스프라이트 생명체들과 마주치며 벌어지는 코믹 공포 이야기.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-start space-y-4 sm:space-y-0 sm:space-x-4">
+                <!-- Play button now navigates to /play/spritefight -->
+                <button onclick="window.location.href='/play/spritefight'" class="bg-white text-black px-8 py-3 rounded-full text-lg font-semibold flex items-center justify-center hover:bg-gray-200 transition duration-300 shadow-lg w-full sm:w-auto">
+                    <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                    재생
+                </button>
+                <button class="bg-gray-700 text-white px-8 py-3 rounded-full text-lg font-semibold flex items-center justify-center hover:bg-gray-600 transition duration-300 shadow-lg w-full sm:w-auto">
+                    <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5L6 11H5a1 1 0 00-1 1v2a1 1 0 001 1h1.268l2.732 3.232A1 1 0 0010 16v-4h4a1 1 0 001-1V9a1 1 0 00-1-1h-4V7z" clip-rule="evenodd"></path></svg>
+                    상세 정보
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Sections -->
+    <main class="relative z-30 pt-8 md:pt-16 px-4 md:px-8 pb-16">
+        <!-- Popular Content -->
+        <section class="mb-12">
+            <h3 class="text-2xl md:text-3xl font-semibold mb-6 text-white">지금 뜨는 콘텐츠</h3>
+            <div class="flex overflow-x-scroll no-scrollbar space-x-4 pb-4">
+                <!-- Sintel Card -->
+                <a href="/play/sintel" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://i.postimg.cc/CK7YT6Z7/q6-Wd-Opu-Wgcdlr-IWv-Be-Zupmx-NLw-Bo-Kj-WMBkmj94h-GM87-Xlu2-Xljs-TDp-QWv6mmlc-QXlc-ECDDJxd-SCmn-Wh-DFr-Gkux-KYLk-G1-Loqfw-TU.webp" alt="Sintel Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sintel</h4>
+                        <p class="text-sm text-gray-400">2010</p>
+                    </div>
+                </a>
+                <!-- Sprite Fright Card -->
+                <a href="/play/spritefight" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://m.media-amazon.com/images/M/MV5BMTQ2MTdjMWEtMmM2Ny00MTNmLTllZjItYTAwNmZiYzY3MDM1XkEyXkFqcGc@._V1_.jpg" alt="Sprite Fright Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sprite Fright</h4>
+                        <p class="text-sm text-gray-400">2021</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- New Releases -->
+        <section class="mb-12">
+            <h3 class="text-2xl md:text-3xl font-semibold mb-6 text-white">새로 올라온 콘텐츠</h3>
+            <div class="flex overflow-x-scroll no-scrollbar space-x-4 pb-4">
+                <!-- Sintel Card -->
+                <a href="/play/sintel" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://i.postimg.cc/CK7YT6Z7/q6-Wd-Opu-Wgcdlr-IWv-Be-Zupmx-NLw-Bo-Kj-WMBkmj94h-GM87-Xlu2-Xljs-TDp-QWv6mmlc-QXlc-ECDDJxd-SCmn-Wh-DFr-Gkux-KYLk-G1-Loqfw-TU.webp" alt="Sintel Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sintel</h4>
+                        <p class="text-sm text-gray-400">2010</p>
+                    </div>
+                </a>
+                <!-- Sprite Fright Card -->
+                <a href="/play/spritefight" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://m.media-amazon.com/images/M/MV5BMTQ2MTdjMWEtMmM2Ny00MTNmLTllZjItYTAwNmZiYzY3MDM1XkEyXkFqcGc@._V1_.jpg" alt="Sprite Fright Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sprite Fright</h4>
+                        <p class="text-sm text-gray-400">2021</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- MATEPLAY Originals -->
+        <section class="mb-12">
+            <h3 class="text-2xl md:text-3xl font-semibold mb-6 text-white">OPEN MOVIE!</h3>
+            <div class="flex overflow-x-scroll no-scrollbar space-x-4 pb-4">
+                <!-- Sintel Card -->
+                <a href="/play/sintel" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://i.postimg.cc/CK7YT6Z7/q6-Wd-Opu-Wgcdlr-IWv-Be-Zupmx-NLw-Bo-Kj-WMBkmj94h-GM87-Xlu2-Xljs-TDp-QWv6mmlc-QXlc-ECDDJxd-SCmn-Wh-DFr-Gkux-KYLk-G1-Loqfw-TU.webp" alt="Sintel Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sintel</h4>
+                        <p class="text-sm text-gray-400">2010</p>
+                    </div>
+                </a>
+                <!-- Sprite Fright Card -->
+                <a href="/play/spritefight" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://m.media-amazon.com/images/M/MV5BMTQ2MTdjMWEtMmM2Ny00MTNmLTllZjItYTAwNmZiYzY3MDM1XkEyXkFqcGc@._V1_.jpg" alt="Sprite Fright Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sprite Fright</h4>
+                        <p class="text-sm text-gray-400">2021</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- Recommended by Genre -->
+        <section class="mb-12">
+            <h3 class="text-2xl md:text-3xl font-semibold mb-6 text-white">인기있는 콘텐츠</h3>
+            <div class="flex overflow-x-scroll no-scrollbar space-x-4 pb-4">
+                <!-- Sintel Card -->
+                <a href="/play/sintel" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://i.postimg.cc/CK7YT6Z7/q6-Wd-Opu-Wgcdlr-IWv-Be-Zupmx-NLw-Bo-Kj-WMBkmj94h-GM87-Xlu2-Xljs-TDp-QWv6mmlc-QXlc-ECDDJxd-SCmn-Wh-DFr-Gkux-KYLk-G1-Loqfw-TU.webp" alt="Sintel Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sintel</h4>
+                        <p class="text-sm text-gray-400">2010</p>
+                    </div>
+                </a>
+                <!-- Sprite Fright Card -->
+                <a href="/play/spritefight" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://m.media-amazon.com/images/M/MV5BMTQ2MTdjMWEtMmM2Ny00MTNmLTllZjItYTAwNmZiYzY3MDM1XkEyXkFqcGc@._V1_.jpg" alt="Sprite Fright Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sprite Fright</h4>
+                        <p class="text-sm text-gray-400">2021</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- My List (Placeholder if user has no list) -->
+        <section class="mb-12">
+            <h3 class="text-2xl md:text-3xl font-semibold mb-6 text-white">MATEPLAY 추천</h3>
+            <div class="flex overflow-x-scroll no-scrollbar space-x-4 pb-4">
+                <!-- Sintel Card -->
+                <a href="/play/sintel" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://i.postimg.cc/CK7YT6Z7/q6-Wd-Opu-Wgcdlr-IWv-Be-Zupmx-NLw-Bo-Kj-WMBkmj94h-GM87-Xlu2-Xljs-TDp-QWv6mmlc-QXlc-ECDDJxd-SCmn-Wh-DFr-Gkux-KYLk-G1-Loqfw-TU.webp" alt="Sintel Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sintel</h4>
+                        <p class="text-sm text-gray-400">2010</p>
+                    </div>
+                </a>
+                <!-- Sprite Fright Card -->
+                <a href="/play/spritefight" class="flex-none w-40 md:w-56 cursor-pointer">
+                    <img src="https://m.media-amazon.com/images/M/MV5BMTQ2MTdjMWEtMmM2Ny00MTNmLTllZjItYTAwNmZiYzY3MDM1XkEyXkFqcGc@._V1_.jpg" alt="Sprite Fright Poster" class="w-full h-auto object-cover rounded-lg overflow-hidden">
+                    <div class="px-3 py-2">
+                        <h4 class="text-md font-medium text-white truncate">Sprite Fright</h4>
+                        <p class="text-sm text-gray-400">2021</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black p-8 text-center text-gray-400 text-sm rounded-t-xl">
+        <div class="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-6">
+            <a href="#" class="hover:text-white transition duration-300">자주 묻는 질문</a>
+            <a href="#" class="hover:text-white transition duration-300">고객 센터</a>
+            <a href="#" class="hover:text-white transition duration-300">이용 약관</a>
+            <a href="#" class="hover:text-white transition duration-300">개인정보 처리방침</a>
+            <a href="#" class="hover:text-white transition duration-300">쿠키 설정</a>
+            <a href="#" class="hover:text-white transition duration-300">회사 정보</a>
+        </div>
+        <p>&copy; 2025 MATEPLAY. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>
