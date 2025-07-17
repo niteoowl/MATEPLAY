@@ -535,6 +535,16 @@
                 display: none; /* 작은 화면에서 연령 정보 숨김 */
             }
         }
+
+        /* 자막 스타일 */
+        video::cue {
+            background-color: transparent; /* 배경 제거 */
+            color: white; /* 흰색 글자 */
+            text-shadow: 0 0 30px rgba(0, 0, 0, 1); /* 그림자 흐림 효과 최대 */
+            line-height: 1.5; /* 줄 간격 조절 */
+            /* max-height는 ::cue에 직접적으로 적용하기 어렵지만,
+               line-height와 font-size를 통해 세로 공간을 조절할 수 있습니다. */
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -612,7 +622,7 @@
                     <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
                     <!-- 자막 파일 경로를 상대 경로로 변경했습니다.
                          charade.vtt 파일을 Netlify 프로젝트의 HTML 파일과 같은 폴더에 업로드해야 합니다. -->
-                    <track kind="subtitles" label="Korean" src="/subtitle/charade.vtt" srclang="ko" id="koreanTrack">
+                    <track kind="subtitles" label="Korean" src="charade.vtt" srclang="ko" id="koreanTrack">
                     브라우저가 비디오 태그를 지원하지 않습니다.
                 </video>
 
@@ -663,13 +673,13 @@
     <footer class="w-full px-8 py-8 mt-12 text-gray-500">
         <div class="max-w-4xl mx-auto flex flex-col space-y-6">
             <div class="flex space-x-4 text-white text-2xl">
-                <i class="fa-brands fa-facebook-square hover:text-gray-300 cursor-pointer"></i>
-                <i class="fa-brands fa-instagram hover:text-gray-300 cursor-pointer"></i>
-                <i class="fa-brands fa-twitter hover:text-gray-300 cursor-pointer"></i>
-                <i class="fa-brands fa-youtube hover:text-gray-300 cursor-pointer"></i>
+                <i class="fa-brands fa-facebook-square"></i>
+                <i class="fa-brands fa-instagram"></i>
+                <i class="fa-brands fa-twitter"></i>
+                <i class="fa-brands fa-youtube"></i>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div class="option hover:text-gray-300 cursor-pointer">자막 및 음성</div>
+                <div class="option">자막 및 음성</div>
                 <div class="option">음성 지원</div>
                 <div class="option">고객 센터</div>
                 <div class="option">기프트카드</div>
@@ -683,8 +693,8 @@
                 <div class="option">회사 정보</div>
                 <div class="option">문의하기</div>
             </div>
-            <button class="service-code border border-gray-500 px-4 py-2 w-fit text-xs hover:bg-gray-800 transition-colors duration-300">서비스 코드</button>
-            <div class="copyright text-xs">
+            <button class="service-code">서비스 코드</button>
+            <div class="copyright">
                 &copy; 1997-2025 KongFlix, Inc.
             </div>
         </div>
