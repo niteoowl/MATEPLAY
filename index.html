@@ -1,38 +1,26 @@
-<!doctype html>
-<html lang="kr">
+<!DOCTYPE html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Kong flix</title>
-    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" xintegrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <!-- Tailwind CSS CDN을 로드합니다. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KongFlix - 영상 시청</title>
+    <!-- Tailwind CSS CDN 로드 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter 폰트 (기본 설정) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome 아이콘 로드 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" xintegrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         /* Inter 폰트를 전역적으로 적용합니다. 넷플릭스와 유사한 폰트 느낌을 줍니다. */
         body {
             font-family: 'Inter', sans-serif;
-        }
-
-        /* CSS 코드 시작 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            color: #fff; /* 기본 텍스트 색상을 흰색으로 유지 */
-            user-select: none;
-        }
-
-        body {
             background-color: #141414; /* 넷플릭스 배경색 */
+            color: #e5e5e5; /* 기본 텍스트 색상 */
+            user-select: none; /* 텍스트 선택 방지 */
         }
-
         a {
             text-decoration: none;
         }
-
         button {
             border: none;
             padding: 0.9em 2em;
@@ -42,7 +30,7 @@
             transition: background-color 0.3s ease, color 0.3s ease; /* 부드러운 호버 효과 */
         }
 
-        /* 네비게이션 바 스타일 */
+        /* 네비게이션 바 스타일 (홈 페이지와 동일하게 복사) */
         nav {
             display: flex;
             justify-content: space-between;
@@ -166,281 +154,282 @@
             position: relative;
             padding-top: 68px; /* 네비게이션 바 높이만큼 패딩 추가 */
         }
-        main .video video {
+
+        /* 비디오 히어로 섹션 (시작 화면과 비디오 플레이어 포함) */
+        .video-hero-section {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 비율 */
+            background-color: #000;
+            overflow: hidden; /* 자식 요소 오버플로우 숨김 */
+        }
+
+        /* 비디오 플레이어 컨테이너 스타일 */
+        .video-player-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            max-height: 85vh; /* 비디오 높이 조정 */
-            object-fit: cover;
-            filter: brightness(70%); /* 비디오 밝기 조정 */
+            display: none; /* 초기에는 숨김 */
         }
-        main .description {
+        .video-player-container.active {
+            display: block; /* 활성화 시 표시 */
+        }
+        .video-player-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 비디오가 컨테이너에 맞게 스케일링되도록 */
+        }
+
+        /* 비디오 시작 화면 (스플래시 스크린) 스타일 */
+        .video-splash-screen {
             position: absolute;
-            bottom: 35%; /* 텍스트를 더 위로 올림 */
-            left: 4%; /* 왼쪽 위치 조정 */
-            max-width: 600px; /* 최대 너비 조정 */
-            z-index: 10; /* 비디오 위에 오도록 설정 */
-            /* 그림자 더 많이, 흐림 효과 더 많이 */
-            text-shadow: 0 0 20px rgba(0, 0, 0, 1), 0 0 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(0, 0, 0, 0.6); /* 흐림 효과를 더더더더더더덛어더더더더더더 많이 적용 */
-        }
-        main .description h1 {
-            font-size: 3.5rem; /* 제목 크기 조정 */
-            font-weight: 700;
-            margin: 0.2em 0;
-        }
-        main .description h3 {
-            font-size: 1.5rem; /* 부제목 크기 조정 */
-            font-weight: 500;
-            margin: 0.5em 0;
-            color: #e5e5e5;
-        }
-        main .description p {
-            font-size: 1.1rem; /* 본문 텍스트 크기 조정 */
-            margin: 0.8em 0 1.5em 0; /* 마진 조정 */
-            line-height: 1.4;
-            color: #e5e5e5;
-        }
-        main .description .buttons {
-            display: flex;
-            gap: 15px; /* 버튼 간격 조정 */
-        }
-        main .description .buttons .play {
-            background-color: #fff; /* 재생 버튼 배경 흰색 */
-            color: #000; /* 재생 버튼 텍스트 검은색 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://image.cine21.com/resize/cine21/still/2018/0413/16_51_54__5ad0619a81a43[W680-].jpg'); /* 영화 포스터 플레이스홀더 */
+            background-size: cover;
+            background-position: center;
             display: flex;
             align-items: center;
-            gap: 0.5em;
-            padding: 0.8em 2.2em; /* 패딩 조정 */
-            border-radius: 0.25rem; /* 둥근 모서리 */
+            justify-content: center;
+            text-align: center;
+            z-index: 50; /* 비디오 위에 오도록 설정 */
+            flex-direction: column;
+            padding: 2rem;
+            box-sizing: border-box;
+            transition: opacity 0.5s ease;
         }
-        main .description .buttons .play:hover {
-            background-color: #e6e6e6; /* 호버 시 밝기 조정 */
+        .video-splash-screen.hidden {
+            opacity: 0;
+            pointer-events: none; /* 클릭 이벤트 비활성화 */
         }
-        main .description .buttons .play * {
+
+        .splash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.9) 100%);
+            z-index: 1;
+        }
+
+        .splash-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            padding: 2rem;
+            /* background-color: rgba(0, 0, 0, 0.6); 이전 검정 박스 배경색 */
+            /* border-radius: 8px; 이전 검정 박스 테두리 둥글게 */
+        }
+
+        .splash-content h1 {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+        .splash-content .movie-meta {
+            font-size: 1.2rem;
+            color: #b3b3b3;
+            margin-bottom: 1rem;
+        }
+        .splash-content p {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+            max-height: 120px; /* 최대 높이 설정 */
+            overflow: hidden; /* 넘치는 텍스트 숨김 */
+            text-overflow: ellipsis; /* 넘치는 텍스트에 ... 표시 */
+            display: -webkit-box;
+            -webkit-line-clamp: 4; /* 4줄까지 표시 */
+            -webkit-box-orient: vertical;
+        }
+        .splash-content .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .splash-content .action-buttons .play-button-splash {
+            background-color: white;
+            color: black;
+            padding: 0.8em 2.5em;
+            border-radius: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .splash-content .action-buttons .play-button-splash:hover {
+            background-color: #e6e6e6;
+        }
+        .splash-content .action-buttons .play-button-splash * {
             color: black;
         }
-        main .description .buttons .play i {
-            font-size: 1.4rem; /* 아이콘 크기 조정 */
-        }
-        main .description .buttons .play span {
-            font-size: 1.1rem; /* 텍스트 크기 조정 */
-            font-weight: 600;
-        }
-        main .description .buttons .detail {
-            background-color: rgba(109, 109, 110, 0.7); /* 상세 정보 버튼 배경색 */
-            color: #fff; /* 상세 정보 버튼 텍스트 흰색 */
+        .splash-content .action-buttons .info-button-splash {
+            background-color: rgba(109, 109, 110, 0.7);
+            color: white;
+            padding: 0.8em 2.5em;
+            border-radius: 0.25rem;
             display: flex;
             align-items: center;
-            gap: 0.8em;
-            padding: 0.8em 2.2em; /* 패딩 조정 */
-            border-radius: 0.25rem; /* 둥근 모서리 */
+            gap: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
         }
-        main .description .buttons .detail i {
-            font-size: 1.4rem; /* 아이콘 크기 조정 */
+        .splash-content .action-buttons .info-button-splash:hover {
+            background-color: rgba(58, 58, 59, 0.7);
         }
-        main .description .buttons .detail:hover {
-            background-color: rgba(58, 58, 59, 0.7); /* 호버 시 배경색 조정 */
-        }
-        main .age-info {
+
+        /* 커스텀 비디오 컨트롤 스타일 */
+        .video-controls {
             position: absolute;
-            bottom: 20%; /* 하단 위치 조정 */
-            right: 0;
-            display: flex;
-            align-items: center;
-            gap: 1em;
-            background-color: rgba(51, 51, 51, 0.6); /* 배경색 조정 */
-            padding: 0.5em 1em;
-            border-left: 3px solid #fff; /* 왼쪽 흰색 선 */
-        }
-        main .age-info i {
-            width: 35px;
-            height: 35px;
-            border: 2px solid white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 50%;
-            font-size: 1.2rem;
-        }
-        main .age-info .age {
-            width: auto; /* 너비 자동 조정 */
-            background-color: transparent; /* 배경색 제거 */
-            padding: 0; /* 패딩 제거 */
-            position: static; /* 위치 제거 */
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-        main .age-info .age:before {
-            content: none; /* 가상 요소 제거 */
-        }
-
-        /* 콘텐츠 슬라이더 섹션 스타일 */
-        section {
-            padding: 2em 4%; /* 섹션 전체 패딩 조정 */
-            position: relative; /* 슬라이더 화살표를 위해 필요 */
-            margin-top: -100px; /* 메인 비디오와 겹치도록 마진 조정 */
-            z-index: 10; /* 메인 비디오 위에 오도록 설정 */
-        }
-        section .content-list {
-            margin-bottom: 2.5rem; /* 슬라이더 간격 조정 */
-            position: relative;
-        }
-        section .content-list:hover .prev,
-        section .content-list:hover .next {
-            opacity: 1; /* 호버 시 나타남 */
-        }
-
-        section .content-list h1 {
-            margin-left: 0; /* 왼쪽 마진 제거 (섹션 패딩으로 대체) */
-            margin-bottom: 1rem;
-            margin-top: 0.5rem;
-            font-size: 1.6rem; /* 제목 크기 조정 */
-            font-weight: 600;
-            cursor: pointer; /* 호버 효과를 위해 커서 포인터 */
-            transition: color 0.3s ease;
-        }
-        section .content-list h1:hover {
-            color: #b3b3b3; /* 호버 시 색상 변경 */
-        }
-        section .content-list .slider {
-            display: flex;
-            gap: 0.8rem; /* 아이템 간격 조정 */
-            overflow-x: scroll;
-            scroll-behavior: smooth;
-            /* 스크롤바 제거 */
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
-            /* 스크롤 스냅 추가 */
-            scroll-snap-type: x mandatory;
-            position: relative; /* 화살표의 부모 요소로 설정 */
-            padding: 0 20px; /* 양쪽 끝에 화살표 공간 확보 */
-        }
-        section .content-list .slider::-webkit-scrollbar {
-            display: none; /* Chrome, Safari, Opera*/
-        }
-        section .content-list .slider .item {
-            min-width: 280px; /* 아이템 최소 너비 조정 (더 크게) */
-            height: 180px; /* 아이템 높이 조정 (더 크게) */
-            background: #262626;
-            border-radius: 4px; /* 둥근 모서리 */
-            overflow: hidden; /* 이미지 오버플로우 방지 */
-            cursor: pointer;
-            transition: box-shadow 0.3s ease; /* 박스 그림자만 전환 */
-            position: relative; /* 자식 요소 포지셔닝을 위해 */
-            scroll-snap-align: start; /* 스크롤 스냅 정렬 */
-        }
-        section .content-list .slider .item:hover {
-            z-index: 20; /* 확대 시 다른 아이템 위로 오도록 */
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.6); /* 그림자 추가 */
-        }
-        section .content-list .slider .item img {
+            bottom: 0;
+            left: 0;
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease; /* 이미지 확대 전환 */
-        }
-        section .content-list .slider .item:hover img {
-            transform: scale(1.1); /* 호버 시 이미지 확대 */
-        }
-
-        /* 슬라이더 화살표 스타일 */
-        section .content-list .prev,
-        section .content-list .next {
-            font-size: 2.5rem; /* 화살표 아이콘 크기 조정 */
-            position: absolute;
-            top: 60%; /* 이미지 높이 기준으로 더 위로 이동 */
-            transform: translateY(-50%);
-            cursor: pointer;
-            background-color: transparent; /* 배경색 제거 */
-            padding: 0 0.5em; /* 패딩 조정 */
-            height: auto; /* 높이를 자동으로 설정하여 아이콘 크기에 맞춤 */
-            display: flex;
-            align-items: center;
-            opacity: 0; /* 기본적으로 숨김 */
-            transition: opacity 0.3s ease;
-            z-index: 50; /* 아이템 호버보다 위에 오도록 설정 */
-            color: rgba(255, 255, 255, 0.8); /* 화살표 색상 조정 */
-        }
-        section .content-list .prev:hover,
-        section .content-list .next:hover {
-            color: #fff; /* 호버 시 색상 강조 */
-        }
-        section .content-list .prev {
-            left: 0; /* 슬라이더의 왼쪽 끝에 배치 */
-            border-top-right-radius: 4px;
-            border-bottom-right-radius: 4px;
-        }
-        section .content-list .next {
-            right: 0; /* 슬라이더의 오른쪽 끝에 배치 */
-            border-top-left-radius: 4px;
-            border-bottom-left-radius: 4px;
-        }
-
-        /* 푸터 스타일 */
-        footer {
-            width: 100%;
-            padding: 2em 4%; /* 패딩 조정 */
-            margin-top: 3rem; /* 상단 마진 조정 */
-            color: #808080; /* 푸터 텍스트 색상 */
-        }
-        footer .wrap {
-            width: 90%; /* 너비 조정 */
-            max-width: 980px; /* 최대 너비 설정 */
-            margin: 0 auto;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            padding: 1rem 2rem;
             display: flex;
             flex-direction: column;
-            row-gap: 1.5em; /* 행 간격 조정 */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
         }
-        footer .wrap .social-icons {
+        .video-player-container:hover .video-controls,
+        .video-controls.active {
+            opacity: 1;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #e50914; /* 넷플릭스 빨간색 */
+            border-radius: 4px;
+        }
+        .progress-thumb {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            background-color: #e50914;
+            border-radius: 50%;
+            display: none; /* 초기에는 숨김 */
+        }
+        .progress-bar-container:hover .progress-thumb {
+            display: block; /* 호버 시 표시 */
+        }
+
+        .controls-bottom {
             display: flex;
-            gap: 1em; /* 아이콘 간격 조정 */
-        }
-        footer .wrap .social-icons i {
-            font-size: 1.8rem; /* 아이콘 크기 조정 */
-            color: #fff; /* 아이콘 색상 흰색 */
-            transition: color 0.3s ease;
-        }
-        footer .wrap .social-icons i:hover {
-            color: #b3b3b3; /* 호버 시 색상 변경 */
-        }
-        footer .wrap .options {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-gap: 0.8em; /* 그리드 간격 조정 */
-            font-size: 0.85rem; /* 폰트 크기 조정 */
-        }
-        footer .wrap .options .option {
-            color: #808080; /* 옵션 텍스트 색상 */
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-        footer .wrap .options .option:hover {
-            color: #b3b3b3; /* 호버 시 색상 변경 */
-        }
-        footer .service-code {
-            margin-top: 1.5em;
-            border: 1px solid #808080;
-            padding: 0.6em 1em;
-            width: fit-content;
-            font-size: 0.8rem;
-            color: #808080;
-            cursor: pointer;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        footer .service-code:hover {
-            background-color: #333;
-            color: #fff;
-        }
-        footer .copyright {
-            margin-top: 1em;
-            font-size: 0.75rem;
-            color: #808080;
+            justify-content: space-between;
+            align-items: center;
         }
 
+        .controls-left, .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
 
-        /* 미디어 쿼리 */
+        .control-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: color 0.2s ease;
+        }
+        .control-button:hover {
+            color: #b3b3b3;
+        }
+
+        /* 자막 버튼 활성화 시 빨간색 */
+        .control-button.subtitle-active {
+            color: #e50914; /* 넷플릭스 빨간색 */
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            appearance: none; /* 기본 슬라이더 스타일 제거 */
+            cursor: pointer;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background-color: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .volume-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background-color: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .time-display {
+            font-size: 0.9rem;
+            color: white;
+        }
+
+        /* 버튼 스타일 (하단 관련 콘텐츠 섹션의 버튼) */
+        .action-button {
+            @apply flex items-center justify-center px-6 py-3 rounded-md font-semibold transition-colors duration-300;
+        }
+        .play-button-main { /* 메인 영상 아래 재생 버튼 */
+            @apply bg-white text-black hover:bg-gray-200;
+        }
+        .info-button {
+            @apply bg-gray-600 bg-opacity-70 text-white hover:bg-gray-700;
+        }
+
+        /* 스크롤바 숨기기 (Chrome, Safari) */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        /* 스크롤바 숨기기 (Firefox) */
+        html {
+            scrollbar-width: none;
+        }
+
+        /* 미디어 쿼리 (홈 페이지와 동일하게 복사) */
         @media screen and (max-width: 1437px) {
-            main .description {
-                bottom: 15%; /* 하단 위치 조정 */
+            .splash-content h1 {
+                font-size: 2.8rem;
+            }
+            .splash-content .movie-meta {
+                font-size: 1rem;
+            }
+            .splash-content p {
+                font-size: 1rem;
+                -webkit-line-clamp: 3; /* 3줄까지 표시 */
             }
         }
         @media screen and (max-width: 982px) {
@@ -490,58 +479,28 @@
             nav .right .search .search-bar input {
                 display: block; /* 모바일에서 입력 필드 표시 */
             }
-            main .description {
-                left: 2%; /* 왼쪽 위치 조정 */
-                max-width: 90%; /* 최대 너비 조정 */
-                bottom: 10%;
+            .splash-content h1 {
+                font-size: 2.2rem;
             }
-            main .description h1 {
-                font-size: 2.5rem;
-            }
-            main .description h3 {
-                font-size: 1.2rem;
-            }
-            main .description p {
+            .splash-content .movie-meta {
                 font-size: 0.9rem;
             }
-            main .age-info {
-                bottom: 10%;
+            .splash-content p {
                 font-size: 0.9rem;
+                -webkit-line-clamp: 2; /* 2줄까지 표시 */
             }
-            section .content-list .slider .item {
-                min-width: 180px; /* 모바일 아이템 최소 너비 */
-                height: 110px; /* 모바일 아이템 높이 */
+            .splash-content .action-buttons button {
+                padding: 0.6em 1.5em;
+                font-size: 1rem;
             }
-            section .content-list .prev,
-            section .content-list .next {
-                font-size: 2rem; /* 모바일 화살표 크기 */
-                top: 60%; /* 모바일에서도 더 위로 */
+            .splash-content .action-buttons button i {
+                font-size: 1rem;
             }
             footer .wrap .options {
                 grid-template-columns: repeat(2, 1fr); /* 모바일 푸터 그리드 2열 */
             }
         }
         @media screen and (max-width: 768px) {
-            main .description h1 {
-                font-size: 2rem;
-            }
-            main .description h3 {
-                font-size: 1rem;
-            }
-            main .description p {
-                display: none; /* 작은 화면에서 설명 숨김 */
-            }
-            main .description .buttons {
-                flex-direction: column; /* 버튼 세로 정렬 */
-                gap: 10px;
-            }
-            main .description .buttons button {
-                width: 100%; /* 버튼 너비 100% */
-                justify-content: center;
-            }
-            main .age-info {
-                display: none; /* 작은 화면에서 연령 정보 숨김 */
-            }
             nav .right .icon.kids {
                 display: none; /* 키즈 아이콘 숨김 */
             }
@@ -555,35 +514,43 @@
                 width: 28px;
                 height: 28px;
             }
+            .splash-content h1 {
+                font-size: 1.8rem;
+            }
+            .splash-content .movie-meta {
+                font-size: 0.8rem;
+            }
+            .splash-content p {
+                display: none; /* 작은 화면에서 설명 숨김 */
+            }
+            .splash-content .action-buttons {
+                flex-direction: column; /* 버튼 세로 정렬 */
+                gap: 10px;
+            }
+            .splash-content .action-buttons button {
+                width: 100%;
+                justify-content: center;
+            }
+            .age-info {
+                display: none; /* 작은 화면에서 연령 정보 숨김 */
+            }
         }
-
-        /* CSS 코드 끝 */
     </style>
 </head>
-<body>
+<body class="min-h-screen">
+    <!-- 네비게이션 바 (홈 페이지와 동일하게 복사) -->
     <nav>
         <div class="left">
             <div class="logo">
-                <!-- 넷플릭스 로고와 유사하게 플레이스홀더 이미지 변경 -->
                 <a href="#"><img src="https://i.postimg.cc/hjK3mt5K/제목을-입력해주세요_-002_(25).png" alt="KongFlix 로고"></a>
             </div>
             <div class="mobile-menu" id="mobileMenuToggle">메뉴</div>
             <ul class="menu-list" id="menuList">
-                <li>
-                    <a href="#">홈</a>
-                </li>
-                <li>
-                    <a href="#">시리즈</a>
-                </li>
-                <li>
-                    <a href="#">영화</a>
-                </li>
-                <li>
-                    <a href="#">NEW! 요즘 대세 콘텐츠</a>
-                </li>
-                <li>
-                    <a href="#">내가 찜한 콘텐츠</a>
-                </li>
+                <li><a href="#" class="text-gray-300 hover:text-white">홈</a></li>
+                <li><a href="#" class="text-gray-300 hover:text-white">시리즈</a></li>
+                <li><a href="#" class="text-gray-300 hover:text-white">영화</a></li>
+                <li><a href="#" class="text-gray-300 hover:text-white">NEW! 요즘 대세 콘텐츠</a></li>
+                <li><a href="#" class="text-gray-300 hover:text-white">내가 찜한 콘텐츠</a></li>
             </ul>
         </div>
         <div class="right">
@@ -602,7 +569,6 @@
             <div class="icon profile">
                 <a href="#">
                     <div class="avatar-box">
-                        <!-- 아바타 이미지 추가 (플레이스홀더) -->
                         <img src="https://placehold.co/32x32/333333/FFFFFF?text=P" alt="프로필 아바타">
                     </div>
                     <i class="fa-solid fa-caret-down"></i>
@@ -610,65 +576,100 @@
             </div>
         </div>
     </nav>
+
     <main>
-        <div class="video">
-            <!-- 비디오 파일이 없으므로 플레이스홀더를 사용합니다. 실제 비디오 경로로 변경해주세요. -->
-            <video src="https://upload.wikimedia.org/wikipedia/commons/d/dc/Charade_%281963%29.webm" autoplay muted loop></video>
-        </div>
-        <div class="description">
-            <!-- 제목을 더 넷플릭스 스타일로 변경 -->
-            <h1 class="text-white text-5xl font-bold mb-4">Charade<br>샤레이드</h1>
-            <h3 class="text-white text-xl font-medium mb-2">1968 · 공포</h3>
-            <p class="text-gray-200 text-lg leading-relaxed">
-파리에서 시작된 위험한 미스터리. 오드리 헵번 주연의 고전 스릴러.
-            </p>
-            <div class="buttons">
-                <button class="play bg-white text-black px-6 py-3 rounded-md flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors duration-300">
-                    <i class="fa-solid fa-play text-xl"></i><span class="text-lg font-semibold">재생</span>
-                </button>
-                <button class="detail bg-gray-600 bg-opacity-70 text-white px-6 py-3 rounded-md flex items-center justify-center gap-2 hover:bg-gray-700 transition-colors duration-300">
-                    <i class="fa-solid fa-circle-info text-xl"></i><span class="text-lg font-semibold">상세 정보</span>
-                </button>
+        <div class="video-hero-section">
+            <!-- 비디오 시작 화면 (스플래시 스크린) -->
+            <div class="video-splash-screen" id="videoSplashScreen">
+                <div class="splash-overlay"></div>
+                <div class="splash-content">
+                    <h1>Charade (1963)</h1>
+                    <div class="movie-meta">
+                        <span>1963</span> &bull; <span>스릴러</span> &bull; <span>12+</span>
+                    </div>
+                    <p>
+                        파리에서 시작된 위험한 미스터리. 오드리 헵번 주연의 고전 스릴러.
+                        레지나 램버트(오드리 헵번)는 남편의 갑작스러운 죽음 이후 자신에게 거액의 돈이 숨겨져 있다는 사실을 알게 된다.
+                        하지만 그녀는 그 돈의 행방을 알지 못하고, 남편의 과거 동료들이 돈을 찾기 위해 그녀를 위협하기 시작한다.
+                        이때 나타난 의문의 남자 피터 조슈아(캐리 그랜트)는 그녀를 돕는 듯하지만, 그 역시 숨겨진 진실을 가지고 있다.
+                        과연 레지나는 돈을 찾고 위험에서 벗어날 수 있을까?
+                    </p>
+                    <div class="action-buttons">
+                        <button class="play-button-splash" id="playButtonSplash">
+                            <i class="fa-solid fa-play"></i><span>재생</span>
+                        </button>
+                        <button class="info-button-splash">
+                            <i class="fa-solid fa-circle-info"></i><span>상세 정보</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="age-info">
-            <i class="fa-solid fa-rotate-right"></i>
-            <div class="age">12+</div>
+
+            <!-- 비디오 플레이어 컨테이너 -->
+            <div class="video-player-container" id="videoPlayerContainer">
+                <video id="mainVideoPlayer" preload="metadata">
+                    <source src="https://upload.wikimedia.org/wikipedia/commons/d/dc/Charade_%281963%29.webm" type="video/webm">
+                    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                    <!-- 자막 파일 경로를 상대 경로로 변경했습니다.
+                         charade.vtt 파일을 Netlify 프로젝트의 HTML 파일과 같은 폴더에 업로드해야 합니다. -->
+                    <track kind="subtitles" label="Korean" src="/subtitle/charade.vtt" srclang="ko" id="koreanTrack">
+                    브라우저가 비디오 태그를 지원하지 않습니다.
+                </video>
+
+                <!-- 커스텀 비디오 컨트롤 -->
+                <div class="video-controls" id="videoControls">
+                    <div class="progress-bar-container" id="progressBarContainer">
+                        <div class="progress-bar" id="progressBar"></div>
+                        <div class="progress-thumb" id="progressThumb"></div>
+                    </div>
+                    <div class="controls-bottom">
+                        <div class="controls-left">
+                            <button class="control-button" id="playPauseButton">
+                                <i class="fa-solid fa-play"></i>
+                            </button>
+                            <button class="control-button" id="rewindButton">
+                                <i class="fa-solid fa-backward-step"></i>
+                            </button>
+                            <button class="control-button" id="forwardButton">
+                                <i class="fa-solid fa-forward-step"></i>
+                            </button>
+                            <div class="volume-container">
+                                <button class="control-button" id="muteButton">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                                <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="1">
+                            </div>
+                            <span class="time-display" id="timeDisplay">00:00 / 00:00</span>
+                        </div>
+                        <div class="controls-right">
+                            <!-- 자막 버튼 추가 -->
+                            <button class="control-button" id="subtitleButton">
+                                <i class="fa-solid fa-closed-captioning"></i>
+                            </button>
+                            <button class="control-button" id="settingsButton">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                            <button class="control-button" id="fullscreenButton">
+                                <i class="fa-solid fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
-    <section>
-        <div class="content-list">
-            <h1>한국이 만든 콘텐츠</h1>
-            <div class="slider">
+
+    <!-- 푸터 (홈 페이지와 유사하게 유지) -->
+    <footer class="w-full px-8 py-8 mt-12 text-gray-500">
+        <div class="max-w-4xl mx-auto flex flex-col space-y-6">
+            <div class="flex space-x-4 text-white text-2xl">
+                <i class="fa-brands fa-facebook-square hover:text-gray-300 cursor-pointer"></i>
+                <i class="fa-brands fa-instagram hover:text-gray-300 cursor-pointer"></i>
+                <i class="fa-brands fa-twitter hover:text-gray-300 cursor-pointer"></i>
+                <i class="fa-brands fa-youtube hover:text-gray-300 cursor-pointer"></i>
             </div>
-            <div class="prev"><i class="fa-solid fa-angle-left"></i></div>
-            <div class="next"><i class="fa-solid fa-angle-right"></i></div>
-        </div>
-        <div class="content-list">
-            <h1>지금 뜨는 콘텐츠</h1>
-            <div class="slider">
-            </div>
-            <div class="prev"><i class="fa-solid fa-angle-left"></i></div>
-            <div class="next"><i class="fa-solid fa-angle-right"></i></div>
-        </div>
-        <div class="content-list">
-            <h1>오늘 한국의 TOP 10 콘텐츠</h1>
-            <div class="slider">
-            </div>
-            <div class="prev"><i class="fa-solid fa-angle-left"></i></div>
-            <div class="next"><i class="fa-solid fa-angle-right"></i></div>
-        </div>
-    </section>
-    <footer>
-        <div class="wrap">
-            <div class="social-icons">
-                <i class="fa-brands fa-facebook-square"></i>
-                <i class="fa-brands fa-instagram"></i>
-                <i class="fa-brands fa-twitter"></i>
-                <i class="fa-brands fa-youtube"></i>
-            </div>
-            <div class="options">
-                <div class="option">자막 및 음성</div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div class="option hover:text-gray-300 cursor-pointer">자막 및 음성</div>
                 <div class="option">음성 지원</div>
                 <div class="option">고객 센터</div>
                 <div class="option">기프트카드</div>
@@ -682,48 +683,39 @@
                 <div class="option">회사 정보</div>
                 <div class="option">문의하기</div>
             </div>
-            <button class="service-code">서비스 코드</button>
-            <div class="copyright">
+            <button class="service-code border border-gray-500 px-4 py-2 w-fit text-xs hover:bg-gray-800 transition-colors duration-300">서비스 코드</button>
+            <div class="copyright text-xs">
                 &copy; 1997-2025 KongFlix, Inc.
             </div>
         </div>
     </footer>
-    <script>
-        // 슬라이더 요소들을 선택합니다.
-        const nextButtons = document.querySelectorAll('.next');
-        const prevButtons = document.querySelectorAll('.prev');
-        const sliders = document.querySelectorAll('.slider');
 
-        // 모바일 메뉴 토글 및 검색창 활성화/비활성화
+    <script>
+        // 네비게이션 바 스크립트 (홈 페이지와 동일하게 복사)
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
         const menuList = document.getElementById('menuList');
         const searchIcon = document.getElementById('searchIcon');
         const searchInput = document.getElementById('searchInput');
 
-        // 모바일 메뉴 토글 이벤트 리스너
         if (mobileMenuToggle && menuList) {
             mobileMenuToggle.addEventListener('click', () => {
                 menuList.classList.toggle('active');
             });
         }
 
-        // 검색 아이콘 클릭 시 검색창 활성화/비활성화 토글
         if (searchIcon && searchInput) {
             searchIcon.addEventListener('click', (event) => {
-                // 검색 입력 필드가 이미 활성화되어 있고, 클릭된 요소가 검색 아이콘 자체가 아니라면
-                // (즉, 입력 필드나 다른 검색 바 내부 요소를 클릭했다면) 활성화 상태를 유지합니다.
                 if (searchIcon.classList.contains('active') && event.target !== searchIcon.querySelector('i')) {
                     return;
                 }
                 searchIcon.classList.toggle('active');
                 if (searchIcon.classList.contains('active')) {
-                    searchInput.focus(); // 활성화 시 입력 필드에 포커스
+                    searchInput.focus();
                 } else {
-                    searchInput.value = ''; // 비활성화 시 입력 필드 초기화
+                    searchInput.value = '';
                 }
             });
 
-            // 검색 입력 필드 외부 클릭 시 검색창 비활성화
             document.addEventListener('click', (event) => {
                 const isClickInsideSearch = searchIcon.contains(event.target);
                 if (!isClickInsideSearch && searchIcon.classList.contains('active')) {
@@ -733,58 +725,203 @@
             });
         }
 
+        // 비디오 플레이어 컨트롤 스크립트
+        const videoPlayer = document.getElementById('mainVideoPlayer');
+        const videoPlayerContainer = document.getElementById('videoPlayerContainer');
+        const videoSplashScreen = document.getElementById('videoSplashScreen');
+        const playButtonSplash = document.getElementById('playButtonSplash');
+        const videoControls = document.getElementById('videoControls');
+        const playPauseButton = document.getElementById('playPauseButton');
+        const rewindButton = document.getElementById('rewindButton');
+        const forwardButton = document.getElementById('forwardButton');
+        const muteButton = document.getElementById('muteButton');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressThumb = document.getElementById('progressThumb');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const fullscreenButton = document.getElementById('fullscreenButton');
+        const subtitleButton = document.getElementById('subtitleButton'); // 자막 버튼 요소 가져오기
+        const koreanTrackElement = document.getElementById('koreanTrack'); // 자막 트랙 요소 가져오기
 
-        // 각 슬라이더에 대해 영화를 가져오고 슬라이더 기능을 만듭니다.
-        for(let i = 0; i < sliders.length; i++) {
-            getMovies(sliders[i], i + 1); // 각 슬라이더에 다른 페이지의 영화를 로드합니다.
-            makeSlider(sliders[i], prevButtons[i], nextButtons[i]);
+        let controlsTimeout;
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
         }
 
-        /**
-         * 슬라이더의 좌우 스크롤 기능을 구현합니다.
-         * @param {HTMLElement} element - 슬라이더 DOM 요소
-         * @param {HTMLElement} prev - 이전 버튼 DOM 요소
-         * @param {HTMLElement} next - 다음 버튼 DOM 요소
-         */
-        function makeSlider(element, prev, next) {
-            next.addEventListener('click', () => {
-                // 아이템 너비 + gap을 정확히 계산하여 스크롤합니다.
-                // 0.8rem은 0.8 * 16px = 12.8px
-                const itemWidth = element.querySelector('.item').offsetWidth + (0.8 * parseFloat(getComputedStyle(document.documentElement).fontSize));
-                element.scrollBy({ left: itemWidth * 4, behavior: 'smooth' }); // 4개 아이템 너비만큼 스크롤
-            });
-            prev.addEventListener('click', () => {
-                const itemWidth = element.querySelector('.item').offsetWidth + (0.8 * parseFloat(getComputedStyle(document.documentElement).fontSize));
-                element.scrollBy({ left: -itemWidth * 4, behavior: 'smooth' }); // 4개 아이템 너비만큼 스크롤
-            });
+        function showControls() {
+            videoControls.classList.add('active');
+            clearTimeout(controlsTimeout);
+            controlsTimeout = setTimeout(() => {
+                if (!videoPlayer.paused && !videoPlayer.ended) {
+                    videoControls.classList.remove('active');
+                }
+            }, 3000); // 3초 후 컨트롤 숨김
         }
 
-        /**
-         * YTS API에서 영화 데이터를 가져와 슬라이더에 추가합니다.
-         * @param {HTMLElement} element - 영화 아이템을 추가할 슬라이더 DOM 요소
-         * @param {number} page - 가져올 영화 데이터의 페이지 번호
-         */
-        function getMovies(element, page) {
-            fetch(`https://yts.mx/api/v2/list_movies.json?limit=20&sort_by=rating&page=${page}`)
-                .then(data => data.json())
-                .then(data => {
-                    const movies = data.data.movies;
-                    if (movies) {
-                        movies.forEach(movie => {
-                            const div = document.createElement('div');
-                            div.className = 'item';
-                            // 영화 포스터 이미지를 추가합니다.
-                            div.innerHTML = `<img src="${movie.medium_cover_image}" alt="${movie.title} 포스터">`;
-                            element.appendChild(div);
-                        });
-                    } else {
-                        console.error('영화를 가져올 수 없습니다:', data);
-                    }
-                })
-                .catch(error => {
-                    console.error('영화 데이터를 가져오는 중 오류 발생:', error);
+        function hideControls() {
+            if (!videoPlayer.paused && !videoPlayer.ended) {
+                videoControls.classList.remove('active');
+            }
+        }
+
+        // 비디오 로드 시 초기 시간 설정
+        videoPlayer.addEventListener('loadedmetadata', () => {
+            timeDisplay.textContent = `00:00 / ${formatTime(videoPlayer.duration)}`;
+            volumeSlider.value = videoPlayer.volume; // 초기 볼륨 슬라이더 값 설정
+            console.log("로드된 텍스트 트랙:", videoPlayer.textTracks); // 로드된 트랙 확인
+        });
+
+        // 스플래시 화면의 재생 버튼 클릭 시
+        playButtonSplash.addEventListener('click', () => {
+            videoSplashScreen.classList.add('hidden'); // 스플래시 화면 숨김
+            videoPlayerContainer.classList.add('active'); // 비디오 플레이어 표시
+            videoPlayer.play(); // 비디오 재생
+            playPauseButton.innerHTML = '<i class="fa-solid fa-pause"></i>'; // 재생 버튼 아이콘 변경
+            showControls(); // 컨트롤 표시
+        });
+
+        // 비디오 플레이어의 재생/일시정지 토글
+        playPauseButton.addEventListener('click', () => {
+            if (videoPlayer.paused || videoPlayer.ended) {
+                videoPlayer.play();
+                playPauseButton.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                showControls(); // 재생 시작 시 컨트롤 표시
+            } else {
+                videoPlayer.pause();
+                playPauseButton.innerHTML = '<i class="fa-solid fa-play"></i>';
+                clearTimeout(controlsTimeout); // 일시정지 시 컨트롤 유지
+            }
+        });
+
+        // 비디오 시간 업데이트
+        videoPlayer.addEventListener('timeupdate', () => {
+            const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressThumb.style.left = `${progress}%`;
+            timeDisplay.textContent = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
+        });
+
+        // 비디오 종료 시
+        videoPlayer.addEventListener('ended', () => {
+            playPauseButton.innerHTML = '<i class="fa-solid fa-play"></i>';
+            showControls(); // 종료 시 컨트롤 유지
+        });
+
+        // 되감기 (10초)
+        rewindButton.addEventListener('click', () => {
+            videoPlayer.currentTime -= 10;
+        });
+
+        // 빨리 감기 (10초)
+        forwardButton.addEventListener('click', () => {
+            videoPlayer.currentTime += 10;
+        });
+
+        // 음소거 토글
+        muteButton.addEventListener('click', () => {
+            videoPlayer.muted = !videoPlayer.muted;
+            muteButton.innerHTML = videoPlayer.muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+            volumeSlider.value = videoPlayer.muted ? 0 : videoPlayer.volume; // 음소거 시 슬라이더 0으로
+        });
+
+        // 볼륨 조절
+        volumeSlider.addEventListener('input', () => {
+            videoPlayer.volume = volumeSlider.value;
+            videoPlayer.muted = false; // 볼륨 조절 시 음소거 해제
+            muteButton.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+            if (volumeSlider.value == 0) { // 볼륨이 0이면 음소거 아이콘으로 변경
+                muteButton.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+                videoPlayer.muted = true;
+            }
+        });
+
+        // 진행 바 클릭 시 시간 이동
+        progressBarContainer.addEventListener('click', (e) => {
+            const rect = progressBarContainer.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            videoPlayer.currentTime = videoPlayer.duration * percentage;
+        });
+
+        // 전체 화면 토글
+        fullscreenButton.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                videoPlayerContainer.requestFullscreen().catch(err => {
+                    console.log(`전체 화면 모드 진입 오류: ${err.message}`);
                 });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // 전체 화면 변경 시 아이콘 업데이트
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenButton.innerHTML = '<i class="fa-solid fa-compress"></i>';
+            } else {
+                fullscreenButton.innerHTML = '<i class="fa-solid fa-expand"></i>';
+            }
+        });
+
+        // 자막 트랙 로드 및 오류 이벤트 리스너
+        if (koreanTrackElement) {
+            koreanTrackElement.addEventListener('load', () => {
+                console.log('Korean subtitle track loaded successfully.');
+                // 트랙이 로드되면 기본적으로 비활성화 상태로 시작 (원하는 경우 'showing'으로 변경 가능)
+                // koreanTrackElement.track.mode = 'showing';
+                // subtitleButton.classList.add('subtitle-active');
+            });
+            koreanTrackElement.addEventListener('error', (e) => {
+                console.error('Error loading Korean subtitle track:', e);
+                console.error('자막 파일을 로드하는 데 문제가 있습니다. 파일이 올바른 WebVTT 형식인지, 그리고 웹 서버에서 접근 가능한지 확인하세요.');
+            });
         }
+
+        // 자막 토글 기능
+        subtitleButton.addEventListener('click', () => {
+            // 비디오의 모든 텍스트 트랙을 가져옵니다.
+            const textTracks = videoPlayer.textTracks;
+            if (textTracks.length > 0) {
+                const koreanSubtitleTrack = Array.from(textTracks).find(track => track.label === 'Korean');
+                if (koreanSubtitleTrack) {
+                    // 트랙의 readyState가 "loaded"인지 확인하여 완전히 로드되었는지 확인합니다.
+                    if (koreanSubtitleTrack.readyState === TextTrack.LOADED) {
+                        if (koreanSubtitleTrack.mode === 'showing') {
+                            koreanSubtitleTrack.mode = 'disabled'; // 자막 비활성화
+                            subtitleButton.classList.remove('subtitle-active'); // 버튼에서 빨간색 클래스 제거
+                            console.log("자막 비활성화됨");
+                        } else {
+                            // 다른 자막 트랙이 활성화되어 있다면 비활성화
+                            Array.from(textTracks).forEach(track => {
+                                if (track.mode === 'showing') {
+                                    track.mode = 'disabled';
+                                }
+                            });
+                            koreanSubtitleTrack.mode = 'showing'; // 자막 활성화
+                            subtitleButton.classList.add('subtitle-active'); // 버튼에 빨간색 클래스 추가
+                            console.log("자막 활성화됨");
+                        }
+                    } else {
+                        console.log("한국어 자막 트랙이 아직 로드되지 않았습니다.");
+                    }
+                } else {
+                    console.log("한국어 자막 트랙을 찾을 수 없습니다. 트랙이 HTML에 올바르게 정의되었는지 확인하세요.");
+                }
+            } else {
+                console.log("비디오에 텍스트 트랙이 없습니다.");
+            }
+        });
+
+        // 마우스 움직임 감지하여 컨트롤 표시/숨김
+        videoPlayerContainer.addEventListener('mousemove', showControls);
+        videoPlayerContainer.addEventListener('mouseleave', hideControls);
+
+        // 초기 로드 시 비디오는 일시정지 상태로 시작
+        // `preload="metadata"`와 `autoplay`가 없으므로 비디오는 기본적으로 일시정지 상태로 시작합니다.
     </script>
 </body>
 </html>
