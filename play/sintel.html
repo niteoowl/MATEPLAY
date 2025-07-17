@@ -27,7 +27,7 @@
             align-items: center;
             /* 변경: 뷰포트 전체를 차지하도록 설정 */
             width: 100vw;
-            height: 100vh;
+            min-height: 100vh; /* Use min-height for better mobile compatibility */
             margin: 0;
             overflow: hidden; /* Prevent scrollbars */
         }
@@ -240,11 +240,18 @@
         #playOverlay i:hover {
             opacity: 1;
         }
+
+        /* Volume bar visibility for touch devices */
+        #volumeBar.volume-bar-visible {
+            opacity: 1 !important;
+            visibility: visible !important;
+            left: calc(100% + 10px) !important; /* Match hover position */
+        }
     </style>
 </head>
 <body class="bg-black text-white">
 
-    <div id="player-container" class="relative w-full h-full bg-black rounded-lg overflow-hidden shadow-2xl">
+    <div id="player-container" class="relative w-full h-screen bg-black rounded-lg overflow-hidden shadow-2xl">
         <!-- Main Video Area -->
         <div class="absolute inset-0 bg-black">
             <!-- autoplay 및 muted 속성 제거 -->
@@ -498,6 +505,7 @@
             } else if (!playerContainer.matches(':hover')) {
                 // If playing and mouse is out, hide controls
                 playerContainer.classList.remove('controls-active');
+                volumeBar.classList.remove('volume-bar-visible'); // Hide volume bar when controls hide
             } else {
                 // If playing and mouse is still in, reschedule hide
                 clearTimeout(controlsHideTimeout);
@@ -558,6 +566,8 @@
                 videoPlayer.volume = currentVolume / 100; // Restore previous volume
                 volumeBar.value = currentVolume;
             }
+            // Toggle volume bar visibility on click
+            volumeBar.classList.toggle('volume-bar-visible');
             showControls(); // Keep controls visible when button is clicked
         });
 
