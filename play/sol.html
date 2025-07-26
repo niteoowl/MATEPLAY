@@ -193,6 +193,29 @@
             height: 46px;
         }
 
+        /* Mobile specific styles for overlay */
+        #lyrics-panel.mobile-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex; /* Ensure it's a flex container for its children */
+            flex-direction: column;
+            z-index: 5; /* Ensure it overlays other content */
+            background-color: #000000; /* Ensure background is black when overlay */
+            padding-top: 2rem; /* Add padding for header space */
+            padding-bottom: 2rem; /* Add padding for bottom space */
+        }
+
+        /* Adjust lyrics-container padding for mobile overlay */
+        #lyrics-panel.mobile-overlay .lyrics-container {
+            padding-bottom: 200px;
+            padding-top: 200px;
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+            mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+        }
+
         /* Responsive adjustments for desktop/tablet */
         @media (min-width: 768px) { /* md breakpoint */
             #main-player-container {
@@ -235,6 +258,9 @@
                 height: 100%; /* Take full height of main-content-flex-wrapper */
                 display: flex; /* Make it a flex container for in-place-lyrics-container */
                 flex-direction: column;
+                position: static; /* Remove absolute positioning on desktop */
+                background-color: transparent; /* Remove background color on desktop */
+                padding: 0; /* Remove padding on desktop */
             }
 
             #in-place-lyrics-container {
@@ -252,11 +278,6 @@
                 -webkit-mask-image: none; /* Remove mask on PC */
                 mask-image: none;
             }
-
-            /* PC에서는 토글 버튼을 숨기지 않음 (요청에 따라) */
-            /* #toggle-view-button {
-                display: none;
-            } */
 
             #mini-lyric-bar {
                 display: none; /* PC에서는 미니 가사 바 숨김 */
@@ -331,8 +352,9 @@
             </div>
 
             <!-- Lyrics Panel (Right on PC, hidden/overlay on Mobile) -->
-            <div id="lyrics-panel" class="w-full flex flex-col md:w-3/5 md:flex-grow md:h-full">
-                <div id="in-place-lyrics-container" class="w-full flex flex-col flex-grow h-full absolute inset-0 md:static md:block">
+            <!-- On mobile, this will be positioned absolutely to overlay the player controls -->
+            <div id="lyrics-panel" class="w-full flex flex-col md:w-3/5 md:flex-grow md:h-full hidden">
+                <div id="in-place-lyrics-container" class="w-full flex flex-col flex-grow h-full">
                     <div class="lyrics-container flex-grow" id="lyrics-content">
                         <!-- Lyrics will be dynamically loaded here -->
                     </div>
@@ -453,9 +475,6 @@
 
                         let lyricText = line.substring(timeMatch[0].length).trim();
 
-                        // Shadow of love.lrc의 경우 [~~] 부분을 무시하고 메인 텍스트만 사용
-                        // b_sol.lrc의 경우, 각 줄이 독립적인 가사로 처리되므로 [~~] 처리는 현재 parseLRC에서 이미 무시됨.
-                        // 이 함수는 단순히 각 타임스탬프와 텍스트를 파싱하여 반환합니다.
                         const jrcMatch = lyricText.split('[~~]');
                         parsedLyrics.push({
                             time: totalSeconds,
@@ -621,7 +640,8 @@
                 }
 
                 // 미니 가사 바 업데이트
-                if (lyricLines && lyricLines.length > 0) {
+                // 미니 가사 바는 PC에서 숨겨지므로, 모바일에서만 이 로직을 실행
+                if (window.innerWidth < 768 && lyricLines && lyricLines.length > 0) {
                     const currentLyricIndex = scrollToIndex !== -1 ? scrollToIndex : (activeIndices.length > 0 ? activeIndices[0] : -1);
 
                     let newCurrentLineText = '';
@@ -693,12 +713,12 @@
                         }
                     }
                     
-                } else {
-                    // 가사가 로드되지 않은 경우
+                } else if (window.innerWidth < 768) { // 모바일에서 가사가 로드되지 않은 경우
                     miniLyricCurrent.textContent = '';
                     miniLyricNext.textContent = '';
                     lastProcessedCurrentLyricIndex.value = -1; // 가사 없을 때 인덱스 초기화
                 }
+                // PC에서는 미니 가사 바를 업데이트하지 않음 (CSS로 숨겨져 있음)
             };
 
             /**
@@ -714,45 +734,46 @@
                     isLyricsVisible = true; // PC에서는 가사가 항상 보이는 것으로 간주
                     
                     playerControlsPanel.classList.remove('hidden'); // 컨트롤 패널 항상 보임
-                    lyricsPanel.classList.remove('hidden'); // 가사 패널 항상 보임
-
-                    // PC 모드에서는 absolute/inset-0 클래스 제거
-                    inPlaceLyricsContainer.classList.remove('absolute', 'inset-0');
-                    inPlaceLyricsContainer.classList.add('static', 'block'); // static, block으로 설정
+                    lyricsPanel.classList.remove('hidden', 'mobile-overlay'); // 가사 패널 항상 보임, 모바일 오버레이 클래스 제거
 
                     // PC에서는 토글 버튼을 숨기지 않음
                     toggleViewButton.classList.remove('hidden'); 
-                    // 하지만 PC에서 이 버튼은 뒤로 가기 기능만 수행하므로, 아이콘은 항상 아래 화살표로 유지
+                    // PC에서 이 버튼은 뒤로 가기 기능만 수행하므로, 아이콘은 항상 아래 화살표로 유지
                     toggleViewButton.innerHTML = `
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     `;
+                    // PC에서는 미니 가사 바 숨김
+                    miniLyricBar.classList.add('hidden');
 
                 } else {
                     // 모바일 모드: 오버레이 토글
                     if (showLyrics) {
                         playerControlsPanel.classList.add('hidden'); // 컨트롤 패널 숨기기
                         lyricsPanel.classList.remove('hidden'); // 가사 패널 표시
-                        inPlaceLyricsContainer.classList.add('absolute', 'inset-0'); // 오버레이로 만들기
-                        inPlaceLyricsContainer.classList.remove('static', 'block');
+                        lyricsPanel.classList.add('mobile-overlay'); // 모바일 오버레이 스타일 적용
                         isLyricsVisible = true;
                         toggleViewButton.innerHTML = `
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                             </svg>
                         `;
+                        // 모바일에서 가사 전체 뷰일 때 미니 가사 바 숨김
+                        miniLyricBar.classList.add('hidden');
+
                     } else {
                         playerControlsPanel.classList.remove('hidden'); // 컨트롤 패널 표시
                         lyricsPanel.classList.add('hidden'); // 가사 패널 숨기기
-                        inPlaceLyricsContainer.classList.remove('absolute', 'inset-0'); // 오버레이 제거
-                        inPlaceLyricsContainer.classList.add('static', 'block'); // 기본 static으로 돌려놓기 (hidden 상태이므로 영향 없음)
+                        lyricsPanel.classList.remove('mobile-overlay'); // 모바일 오버레이 스타일 제거
                         isLyricsVisible = false;
                         toggleViewButton.innerHTML = `
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         `;
+                        // 모바일에서 플레이어 뷰일 때 미니 가사 바 표시
+                        miniLyricBar.classList.remove('hidden');
                     }
                     toggleViewButton.classList.remove('hidden'); // 모바일에서는 토글 버튼 항상 보임
                 }
@@ -896,10 +917,18 @@
             // Initial call to set correct view based on screen size
             const handleResize = () => {
                 const isDesktop = window.innerWidth >= 768;
-                if (!isDesktop) { // 모바일로 전환될 때만 isLyricsVisible을 초기화
-                    isLyricsVisible = false;
+                if (isDesktop) {
+                    miniLyricBar.classList.add('hidden');
+                    isLyricsVisible = true; // On desktop, lyrics are always visible in split view
+                } else {
+                    // On mobile, mini lyric bar visibility depends on isLyricsVisible
+                    if (isLyricsVisible) { // If lyrics are full screen
+                        miniLyricBar.classList.add('hidden');
+                    } else { // If player is main view
+                        miniLyricBar.classList.remove('hidden');
+                    }
                 }
-                toggleInPlaceLyricsView(isLyricsVisible); // 현재 isLyricsVisible 상태 전달
+                toggleInPlaceLyricsView(isLyricsVisible);
             };
             window.addEventListener('resize', handleResize);
             
