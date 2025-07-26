@@ -192,6 +192,53 @@
             width: 46px; /* 플레이/일시정지 아이콘 크기 */
             height: 46px;
         }
+
+        /* PC/태블릿 레이아웃을 위한 미디어 쿼리 */
+        @media (min-width: 768px) { /* Tailwind의 md breakpoint */
+            body {
+                /* PC/태블릿에서는 flex-row로 변경되므로 중앙 정렬 제거 */
+                justify-content: flex-start;
+                align-items: flex-start;
+                padding: 2rem; /* 전체적인 여백 추가 */
+            }
+            #main-player-container {
+                flex-direction: row; /* 두 열 레이아웃 */
+                max-width: 1024px; /* 더 넓은 최대 너비 */
+                width: 90%; /* 화면 너비에 맞게 조정 */
+                height: calc(100vh - 4rem); /* 뷰포트 높이에 맞게 조정 (상하 여백 제외) */
+                padding: 0; /* 컨테이너 자체의 패딩 제거 (내부 열에서 처리) */
+                align-items: stretch; /* 자식 요소들이 높이를 채우도록 */
+            }
+            #left-column-player {
+                padding: 1.5rem; /* 왼쪽 열 내부 패딩 */
+                height: 100%; /* 부모 높이 채우기 */
+                display: flex; /* 내부 요소 정렬을 위해 flex 사용 */
+                flex-direction: column; /* 세로 정렬 */
+                justify-content: center; /* 세로 중앙 정렬 */
+                align-items: center; /* 가로 중앙 정렬 */
+            }
+            #right-column-lyrics {
+                padding: 1.5rem; /* 오른쪽 열 내부 패딩 */
+                height: 100%; /* 부모 높이 채우기 */
+                display: flex;
+                flex-direction: column;
+            }
+            #in-place-lyrics-container {
+                height: 100%; /* 오른쪽 열의 전체 높이 차지 */
+            }
+            .lyrics-container {
+                padding-top: 0; /* PC에서는 마스크가 필요 없으므로 패딩 제거 */
+                padding-bottom: 0;
+                -webkit-mask-image: none; /* 마스크 제거 */
+                mask-image: none; /* 마스크 제거 */
+            }
+            .lyric-line {
+                font-size: 1.5rem; /* PC/태블릿에 맞게 폰트 크기 조정 */
+            }
+            .lyric-line.pronunciation-text span {
+                font-size: 0.5em; /* 발음 텍스트 크기 조정 */
+            }
+        }
     </style>
 </head>
 <body class="bg-black text-white flex flex-col items-center justify-center min-h-screen p-4">
@@ -200,86 +247,85 @@
     <div id="blurred-background" class="album-art-background"></div>
 
     <!-- Main Player Container -->
-    <div id="main-player-container" class="w-full max-w-md rounded-lg p-6 flex flex-col items-center space-y-6 z-10">
-        <!-- 상단 헤더 -->
-        <div class="w-full flex justify-between items-center mb-4">
-            <button id="toggle-view-button" class="text-gray-400 hover:text-white transition-colors duration-200">
-                <!-- Custom SVG for back/down arrow -->
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
-            <span class="text-gray-400 text-sm font-semibold">지금 재생 중</span>
-            <!-- Menu Button and Dropdown -->
-            <div class="relative">
-                <button id="menu-button" class="text-gray-400 hover:text-white transition-colors duration-200 p-2 rounded-full">
-                    <!-- Custom SVG for menu/ellipsis -->
+    <div id="main-player-container" class="w-full max-w-md rounded-lg p-6 flex flex-col items-center space-y-6 z-10 md:flex-row md:max-w-4xl md:space-y-0 md:space-x-8">
+        <!-- Left Column: Album Art, Song Info, Controls -->
+        <div id="left-column-player" class="w-full md:w-1/2 flex flex-col items-center md:items-start space-y-6">
+            <!-- 상단 헤더 (모바일 전용) -->
+            <div class="w-full flex justify-between items-center mb-4 md:hidden">
+                <button id="toggle-view-button" class="text-gray-400 hover:text-white transition-colors duration-200">
+                    <!-- Custom SVG for back/down arrow -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
-                <div id="menu-dropdown" class="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-md shadow-lg py-1 hidden z-20">
-                    <a href="#" id="beta-lrc-option" class="block px-4 py-2 text-sm text-white hover:bg-zinc-700">BETA | 발음 표시</a>
+                <span class="text-gray-400 text-sm font-semibold">지금 재생 중</span>
+                <!-- Menu Button and Dropdown -->
+                <div class="relative">
+                    <button id="menu-button" class="text-gray-400 hover:text-white transition-colors duration-200 p-2 rounded-full">
+                        <!-- Custom SVG for menu/ellipsis -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <div id="menu-dropdown" class="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-md shadow-lg py-1 hidden z-20">
+                        <a href="#" id="beta-lrc-option" class="block px-4 py-2 text-sm text-white hover:bg-zinc-700">BETA | 발음 표시</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 앨범 아트 -->
+            <div class="w-full max-w-xs aspect-square rounded-xl overflow-hidden shadow-lg">
+                <img id="main-album-art" src="https://i.postimg.cc/bvrNjk2Y/artplayer_18_11.png" alt="앨범 아트" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x400/3498db/ffffff?text=Error';" />
+            </div>
+            <!-- 노래 정보 -->
+            <div class="text-center mt-6">
+                <h1 id="song-title" class="text-3xl font-bold mb-1">恋色</h1>
+                <p class="text-lg text-gray-400" id="artist-name">案納 想</p>
+            </div>
+
+            <!-- 진행 바 -->
+            <div class="w-full mt-6">
+                <input type="range" min="0" max="100" value="0" class="w-full">
+                <div class="flex justify-between text-xs text-gray-400 mt-2">
+                    <span id="current-time">0:00</span>
+                    <span id="remaining-time">-0:00</span>
+                </div>
+            </div>
+
+            <!-- 재생 컨트롤 -->
+            <div class="w-full flex justify-around items-center mt-8">
+                <!-- Skip backward button -->
+                <button id="prev-button" class="text-white hover:text-gray-300 transition-colors duration-200 p-4 rounded-full">
+                    <img src="https://i.postimg.cc/6pqXd5p8/previous.png" alt="이전 곡" class="control-icon" onerror="this.onerror=null;this.src='https://placehold.co/48x48/000000/FFFFFF?text=Prev';">
+                </button>
+                <!-- Play/Pause button -->
+                <button id="play-pause-button" class="text-white p-5 rounded-full transition-colors duration-200">
+                    <!-- Play icon -->
+                    <img id="play-icon" src="https://i.postimg.cc/MZ0qwFLp/play.png" alt="재생" class="play-pause-icon" onerror="this.onerror=null;this.src='https://placehold.co/56x56/000000/FFFFFF?text=Play';">
+                    <!-- Pause icon (using stop.png as requested) -->
+                    <img id="pause-icon" src="https://i.postimg.cc/15JSnNsx/stop.png" alt="일시정지" class="play-pause-icon" style="display:none;" onerror="this.onerror=null;this.src='https://placehold.co/56x56/000000/FFFFFF?text=Pause';">
+                </button>
+                <!-- Skip forward button -->
+                <button id="next-button" class="text-white hover:text-gray-300 transition-colors duration-200 p-4 rounded-full">
+                    <img src="https://i.postimg.cc/fTwZRv4j/next.png" alt="다음 곡" class="control-icon" onerror="this.onerror=null;this.src='https://placehold.co/48x40/000000/FFFFFF?text=Next';">
+                </button>
+            </div>
+
+            <!-- Mini Lyric Bar - Simple Blur Effect Applied (모바일 전용) -->
+            <div id="mini-lyric-bar" class="w-full mt-[-1rem] px-6 py-3 rounded-lg cursor-pointer transition-colors duration-200 md:hidden">
+                <div id="mini-lyric-scroll-wrapper" class="flex flex-col justify-center items-center h-full transition-transform duration-300 ease-out opacity-100">
+                    <p id="mini-lyric-current" class="mini-lyric-line"></p>
+                    <p id="mini-lyric-next" class="mini-lyric-line"></p>
                 </div>
             </div>
         </div>
 
-        <!-- Content Area: Album Art/Song Info OR In-place Lyrics -->
-        <div id="content-area" class="w-full relative h-[420px]"> <!-- Fixed height for this area -->
-            <!-- Player Main Content (Album Art, Song Info) -->
-            <div id="player-main-content" class="absolute inset-0 flex flex-col items-center justify-center space-y-6 w-full">
-                <!-- 앨범 아트 -->
-                <div class="w-full max-w-xs aspect-square rounded-xl overflow-hidden shadow-lg">
-                    <img id="main-album-art" src="https://i.postimg.cc/bvrNjk2Y/artplayer_18_11.png" alt="앨범 아트" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x400/3498db/ffffff?text=Error';" />
-                </div>
-                <!-- 노래 정보 -->
-                <div class="text-center mt-6">
-                    <h1 id="song-title" class="text-3xl font-bold mb-1">恋色</h1>
-                    <p class="text-lg text-gray-400" id="artist-name">案納 想</p>
-                </div>
-            </div>
-
-            <!-- In-place Lyrics Container -->
-            <div id="in-place-lyrics-container" class="absolute inset-0 w-full flex flex-col hidden"> <!-- Removed text-center, added flex-col -->
-                <div class="lyrics-container flex-grow" id="lyrics-content"> <!-- flex-grow to fill remaining height -->
+        <!-- Right Column: In-place Lyrics -->
+        <div id="right-column-lyrics" class="w-full md:w-1/2 flex flex-col items-center md:items-start md:h-full"> <!-- Adjust height for full view -->
+            <div id="in-place-lyrics-container" class="w-full flex flex-col h-full">
+                <div class="lyrics-container flex-grow" id="lyrics-content">
                     <!-- Lyrics will be dynamically loaded here -->
                 </div>
-            </div>
-        </div>
-
-        <!-- 진행 바 -->
-        <div class="w-full mt-6">
-            <input type="range" min="0" max="100" value="0" class="w-full">
-            <div class="flex justify-between text-xs text-gray-400 mt-2">
-                <span>0:00</span>
-                <span>-0:00</span>
-            </div>
-        </div>
-
-        <!-- 재생 컨트롤 -->
-        <div class="w-full flex justify-around items-center mt-8">
-            <!-- Skip backward button -->
-            <button id="prev-button" class="text-white hover:text-gray-300 transition-colors duration-200 p-4 rounded-full">
-                <img src="https://i.postimg.cc/6pqXd5p8/previous.png" alt="이전 곡" class="control-icon" onerror="this.onerror=null;this.src='https://placehold.co/48x48/000000/FFFFFF?text=Prev';">
-            </button>
-            <!-- Play/Pause button -->
-            <button id="play-pause-button" class="text-white p-5 rounded-full transition-colors duration-200">
-                <!-- Play icon -->
-                <img id="play-icon" src="https://i.postimg.cc/MZ0qwFLp/play.png" alt="재생" class="play-pause-icon" onerror="this.onerror=null;this.src='https://placehold.co/56x56/000000/FFFFFF?text=Play';">
-                <!-- Pause icon (using stop.png as requested) -->
-                <img id="pause-icon" src="https://i.postimg.cc/15JSnNsx/stop.png" alt="일시정지" class="play-pause-icon" style="display:none;" onerror="this.onerror=null;this.src='https://placehold.co/56x56/000000/FFFFFF?text=Pause';">
-            </button>
-            <!-- Skip forward button -->
-            <button id="next-button" class="text-white hover:text-gray-300 transition-colors duration-200 p-4 rounded-full">
-                <img src="https://i.postimg.cc/fTwZRv4j/next.png" alt="다음 곡" class="control-icon" onerror="this.onerror=null;this.src='https://placehold.co/48x48/000000/FFFFFF?text=Next';">
-            </button>
-        </div>
-
-        <!-- Mini Lyric Bar - Simple Blur Effect Applied -->
-        <div id="mini-lyric-bar" class="w-full mt-[-1rem] px-6 py-3 rounded-lg cursor-pointer transition-colors duration-200">
-            <div id="mini-lyric-scroll-wrapper" class="flex flex-col justify-center items-center h-full transition-transform duration-300 ease-out opacity-100">
-                <p id="mini-lyric-current" class="mini-lyric-line"></p>
-                <p id="mini-lyric-next" class="mini-lyric-line"></p>
             </div>
         </div>
     </div>
@@ -298,15 +344,15 @@
             const blurredBackground = document.getElementById('blurred-background');
             const miniLyricBar = document.getElementById('mini-lyric-bar');
             const toggleViewButton = document.getElementById('toggle-view-button'); // 뷰 전환 버튼 (상단 헤더의 뒤로 가기 버튼)
-            const playerMainContent = document.getElementById('player-main-content'); // 앨범 아트, 노래 정보 컨테이너
-            const inPlaceLyricsContainer = document.getElementById('in-place-lyrics-container'); // 인플레이스 가사 컨테이너
+            const leftColumnPlayer = document.getElementById('left-column-player'); // 왼쪽 플레이어 컬럼
+            const inPlaceLyricsContainer = document.getElementById('in-place-lyrics-container'); // 인플레이스 가사 컨테이너 (오른쪽 컬럼 내부)
             const lyricsContent = document.getElementById('lyrics-content'); // 가사 내용이 들어갈 실제 div
             let lyricLines; // 모든 가사 줄을 저장할 변수 (동적으로 로드 후 할당)
             const songTitleElement = document.getElementById('song-title');
             const artistNameElement = document.getElementById('artist-name');
             const progressBar = document.querySelector('input[type="range"]'); // 진행 바
-            const currentTimeSpan = document.querySelector('.flex.justify-between span:first-child');
-            const remainingTimeSpan = document.querySelector('.flex.justify-between span:last-child');
+            const currentTimeSpan = document.getElementById('current-time');
+            const remainingTimeSpan = document.getElementById('remaining-time');
 
             // 미니 가사 바 요소들
             const miniLyricScrollWrapper = document.getElementById('mini-lyric-scroll-wrapper');
@@ -320,7 +366,7 @@
 
             // 상태 변수
             let isPlaying = false;
-            let isLyricsVisible = false; // 가사가 인플레이스 뷰에 표시되는지 여부
+            let isLyricsVisible = false; // 가사가 인플레이스 뷰에 표시되는지 여부 (모바일 전용)
             let lastProcessedCurrentLyricIndex = { value: -1 }; // 객체로 래핑하여 참조 전달 가능하게 변경
             let isPronunciationModeActive = false; // 발음 표시 모드 활성화 여부
             let currentLrcUrl = 'https://nmate.kr/Shadow of love.lrc'; // 현재 로드된 LRC 파일 URL
@@ -328,6 +374,12 @@
             // 노래 정보 설정 (하드코딩)
             songTitleElement.textContent = "恋色"; // 노래 제목 업데이트
             artistNameElement.textContent = "案納 想"; // 아티스트 이름 설정
+
+            /**
+             * 현재 화면이 모바일 크기인지 확인하는 헬퍼 함수.
+             * @returns {boolean} 모바일 화면이면 true, 아니면 false.
+             */
+            const isMobile = () => window.matchMedia('(max-width: 767px)').matches; // Tailwind의 'md' breakpoint는 768px
 
             /**
              * 시간(초)을 "분:초" 형식으로 포맷하는 헬퍼 함수.
@@ -473,12 +525,14 @@
                     });
 
                     // 인플레이스 가사 뷰 업데이트 및 스크롤 (가사 뷰가 활성화되어 있거나 스크롤 강제 시)
+                    // PC/태블릿에서는 isLyricsVisible이 항상 true이므로 항상 스크롤
                     if ((isLyricsVisible || forceScroll) && scrollIndex !== -1 && lyricLines[scrollIndex]) {
                         const lineToScroll = lyricLines[scrollIndex];
                         const containerHeight = lyricsContent.clientHeight;
                         const lineOffsetTop = lineToScroll.offsetTop;
                         const lineHeight = lineToScroll.clientHeight;
 
+                        // 스크롤 위치를 가사 줄이 중앙에 오도록 조정
                         lyricsContent.scrollTo({
                             top: lineOffsetTop - (containerHeight / 2) + (lineHeight / 2),
                             behavior: 'smooth'
@@ -553,8 +607,8 @@
                     highlightLyric(newActiveIndicesSorted, scrollToIndex, forceScroll);
                 }
 
-                // 미니 가사 바 업데이트
-                if (lyricLines && lyricLines.length > 0) {
+                // 미니 가사 바 업데이트 (모바일 전용)
+                if (isMobile() && lyricLines && lyricLines.length > 0) {
                     const currentLyricIndex = scrollToIndex !== -1 ? scrollToIndex : (activeIndices.length > 0 ? activeIndices[0] : -1);
 
                     let newCurrentLineText = '';
@@ -626,41 +680,50 @@
                         }
                     }
                     
-                } else {
-                    // 가사가 로드되지 않은 경우
+                } else if (!isMobile()) {
+                    // PC/태블릿 모드에서는 미니 가사 바 내용 초기화
                     miniLyricCurrent.textContent = '';
                     miniLyricNext.textContent = '';
-                    lastProcessedCurrentLyricIndex.value = -1; // 가사 없을 때 인덱스 초기화
+                    lastProcessedCurrentLyricIndex.value = -1;
                 }
             };
 
             /**
-             * 메인 플레이어 뷰와 인플레이스 가사 뷰를 전환하는 함수.
+             * 메인 플레이어 뷰와 인플레이스 가사 뷰를 전환하는 함수 (모바일 전용).
+             * PC/태블릿에서는 가사가 항상 표시됩니다.
              * @param {boolean} showLyrics - 인플레이스 가사 뷰를 표시할지 여부.
              */
             const toggleInPlaceLyricsView = (showLyrics) => {
-                if (showLyrics) {
-                    playerMainContent.classList.add('hidden'); // 앨범 아트, 노래 정보 숨기기
-                    inPlaceLyricsContainer.classList.remove('hidden'); // 인플레이스 가사 표시
-                    isLyricsVisible = true;
-                    // 뒤로 가기 버튼의 아이콘을 아래 화살표에서 위 화살표로 변경 (가사 뷰를 나타냄)
-                    toggleViewButton.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                        </svg>
-                    `;
-                    // 뷰 전환 시 현재 가사를 다시 하이라이트하고 스크롤을 강제
-                    updateLyricsOnTimeUpdate(true);
+                if (isMobile()) {
+                    if (showLyrics) {
+                        leftColumnPlayer.classList.add('hidden'); // 앨범 아트, 노래 정보 숨기기
+                        inPlaceLyricsContainer.classList.remove('hidden'); // 인플레이스 가사 표시
+                        isLyricsVisible = true;
+                        // 뒤로 가기 버튼의 아이콘을 아래 화살표에서 위 화살표로 변경 (가사 뷰를 나타냄)
+                        toggleViewButton.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                            </svg>
+                        `;
+                        // 뷰 전환 시 현재 가사를 다시 하이라이트하고 스크롤을 강제
+                        updateLyricsOnTimeUpdate(true);
+                    } else {
+                        leftColumnPlayer.classList.remove('hidden'); // 앨범 아트, 노래 정보 표시
+                        inPlaceLyricsContainer.classList.add('hidden'); // 인플레이스 가사 숨기기
+                        isLyricsVisible = false;
+                        // 뒤로 가기 버튼의 아이콘을 위 화살표에서 아래 화살표로 변경 (플레이어 뷰를 나타냄)
+                        toggleViewButton.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        `;
+                    }
                 } else {
-                    playerMainContent.classList.remove('hidden'); // 앨범 아트, 노래 정보 표시
-                    inPlaceLyricsContainer.classList.add('hidden'); // 인플레이스 가사 숨기기
-                    isLyricsVisible = false;
-                    // 뒤로 가기 버튼의 아이콘을 위 화살표에서 아래 화살표로 변경 (플레이어 뷰를 나타냄)
-                    toggleViewButton.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    `;
+                    // PC/태블릿에서는 항상 두 열이 표시되므로, isLyricsVisible만 true로 설정
+                    isLyricsVisible = true;
+                    leftColumnPlayer.classList.remove('hidden');
+                    inPlaceLyricsContainer.classList.remove('hidden');
+                    updateLyricsOnTimeUpdate(true); // PC/태블릿 모드에서 가사 스크롤 강제
                 }
             };
 
@@ -716,23 +779,29 @@
                 audioPlayer.currentTime = Math.min(audioPlayer.duration, audioPlayer.currentTime + 10); // 10초 앞으로
             });
 
-            // 미니 가사 바 클릭 시 뷰 전환 (토글 기능)
-            miniLyricBar.addEventListener('click', () => toggleInPlaceLyricsView(!isLyricsVisible));
+            // 미니 가사 바 클릭 시 뷰 전환 (모바일 전용)
+            miniLyricBar.addEventListener('click', () => {
+                if (isMobile()) {
+                    toggleInPlaceLyricsView(!isLyricsVisible);
+                }
+            });
             
-            // 상단 헤더의 뒤로 가기 버튼 클릭 시 뷰 전환 및 이전 탭 이동 로직
+            // 상단 헤더의 뒤로 가기 버튼 클릭 시 뷰 전환 및 이전 탭 이동 로직 (모바일 전용)
             toggleViewButton.addEventListener('click', () => {
-                if (isLyricsVisible) {
-                    // 가사 뷰가 활성화되어 있으면 플레이어 뷰로 전환
-                    toggleInPlaceLyricsView(false);
-                } else {
-                    // 플레이어 뷰가 활성화되어 있으면 이전 페이지로 이동
-                    const referrer = document.referrer;
-                    if (referrer && referrer.includes('/play/')) {
-                        console.log("이전 탭이 /play/ 경로를 포함하여 이전의 이전 탭으로 이동 시도:", referrer);
-                        history.go(-2); // 이전의 이전 탭으로 이동 시도
+                if (isMobile()) {
+                    if (isLyricsVisible) {
+                        // 가사 뷰가 활성화되어 있으면 플레이어 뷰로 전환
+                        toggleInPlaceLyricsView(false);
                     } else {
-                        console.log("이전 탭이 /play/ 경로를 포함하지 않거나 referrer 없음. 이전 탭으로 이동:", referrer);
-                        history.back(); // 일반적인 이전 탭으로 이동
+                        // 플레이어 뷰가 활성화되어 있으면 이전 페이지로 이동
+                        const referrer = document.referrer;
+                        if (referrer && referrer.includes('/play/')) {
+                            console.log("이전 탭이 /play/ 경로를 포함하여 이전의 이전 탭으로 이동 시도:", referrer);
+                            history.go(-2); // 이전의 이전 탭으로 이동 시도
+                        } else {
+                            console.log("이전 탭이 /play/ 경로를 포함하지 않거나 referrer 없음. 이전 탭으로 이동:", referrer);
+                            history.back(); // 일반적인 이전 탭으로 이동
+                        }
                     }
                 }
             });
@@ -800,8 +869,26 @@
             // 초기 LRC 파일 로드
             loadLyrics(currentLrcUrl);
 
-            // 초기 상태 설정: 인플레이스 가사 뷰 숨기기
-            toggleInPlaceLyricsView(false);
+            // 초기 뷰 설정 (모바일/PC에 따라 다름)
+            const initializeView = () => {
+                if (isMobile()) {
+                    toggleInPlaceLyricsView(false); // 모바일에서는 플레이어 뷰로 시작
+                } else {
+                    // PC/태블릿에서는 두 열이 모두 보임
+                    leftColumnPlayer.classList.remove('hidden');
+                    inPlaceLyricsContainer.classList.remove('hidden');
+                    isLyricsVisible = true; // PC/태블릿에서는 가사가 항상 보이므로 true
+                    updateLyricsOnTimeUpdate(true); // 가사 위치를 현재 재생 시간에 맞춰 업데이트
+                }
+            };
+
+            // 초기 뷰 설정 호출
+            initializeView();
+
+            // 화면 크기 변경 시 뷰 전환 처리
+            window.addEventListener('resize', () => {
+                initializeView(); // 화면 크기 변경 시마다 뷰를 다시 초기화
+            });
 
             // 페이지 전체 우클릭 방지
             document.addEventListener('contextmenu', event => event.preventDefault());
