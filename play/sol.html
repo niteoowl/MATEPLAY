@@ -253,14 +253,13 @@
                 mask-image: none;
             }
 
-            #toggle-view-button {
-                display: none; /* Hide toggle button on PC */
-            }
+            /* PC에서는 토글 버튼을 숨기지 않음 (요청에 따라) */
+            /* #toggle-view-button {
+                display: none;
+            } */
 
             #mini-lyric-bar {
-                margin-top: 2rem; /* Add some space above it */
-                width: 100%; /* Ensure it takes full width of container */
-                flex-shrink: 0; /* Don't shrink mini lyric bar */
+                display: none; /* PC에서는 미니 가사 바 숨김 */
             }
         }
     </style>
@@ -274,7 +273,7 @@
     <div id="main-player-container" class="w-full rounded-lg p-6 flex flex-col items-center space-y-6 z-10 md:min-h-[80vh] md:max-w-screen-xl">
         <!-- Header (top bar) - always at the top of main-player-container -->
         <div id="header-area" class="w-full flex justify-between items-center mb-4">
-            <button id="toggle-view-button" class="text-gray-400 hover:text-white transition-colors duration-200 md:hidden">
+            <button id="toggle-view-button" class="text-gray-400 hover:text-white transition-colors duration-200">
                 <!-- Custom SVG for back/down arrow -->
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -712,18 +711,24 @@
 
                 if (isDesktop) {
                     // PC/태블릿 모드: 가사 패널과 컨트롤 패널은 항상 보임
-                    // 이 함수는 PC에서는 주로 클래스 설정을 초기화하고, 가사 패널을 보이게 합니다.
                     isLyricsVisible = true; // PC에서는 가사가 항상 보이는 것으로 간주
                     
                     playerControlsPanel.classList.remove('hidden'); // 컨트롤 패널 항상 보임
                     lyricsPanel.classList.remove('hidden'); // 가사 패널 항상 보임
 
                     // PC 모드에서는 absolute/inset-0 클래스 제거
-                    // inPlaceLyricsContainer는 lyricsPanel의 자식으로, lyricsPanel이 flex-col이므로 static이 적절
                     inPlaceLyricsContainer.classList.remove('absolute', 'inset-0');
                     inPlaceLyricsContainer.classList.add('static', 'block'); // static, block으로 설정
 
-                    toggleViewButton.classList.add('hidden'); // 토글 버튼 숨김
+                    // PC에서는 토글 버튼을 숨기지 않음
+                    toggleViewButton.classList.remove('hidden'); 
+                    // 하지만 PC에서 이 버튼은 뒤로 가기 기능만 수행하므로, 아이콘은 항상 아래 화살표로 유지
+                    toggleViewButton.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    `;
+
                 } else {
                     // 모바일 모드: 오버레이 토글
                     if (showLyrics) {
@@ -811,11 +816,9 @@
             
             // 상단 헤더의 뒤로 가기 버튼 클릭 시 뷰 전환 및 이전 탭 이동 로직
             toggleViewButton.addEventListener('click', () => {
-                if (isLyricsVisible) {
-                    // 가사 뷰가 활성화되어 있으면 플레이어 뷰로 전환
-                    toggleInPlaceLyricsView(false);
-                } else {
-                    // 플레이어 뷰가 활성화되어 있으면 이전 페이지로 이동
+                const isDesktop = window.innerWidth >= 768;
+                if (isDesktop) {
+                    // PC에서는 항상 뒤로 가기
                     const referrer = document.referrer;
                     if (referrer && referrer.includes('/play/')) {
                         console.log("이전 탭이 /play/ 경로를 포함하여 이전의 이전 탭으로 이동 시도:", referrer);
@@ -824,6 +827,9 @@
                         console.log("이전 탭이 /play/ 경로를 포함하지 않거나 referrer 없음. 이전 탭으로 이동:", referrer);
                         history.back(); // 일반적인 이전 탭으로 이동
                     }
+                } else {
+                    // 모바일에서는 뷰 토글
+                    toggleInPlaceLyricsView(!isLyricsVisible);
                 }
             });
 
@@ -889,7 +895,10 @@
 
             // Initial call to set correct view based on screen size
             const handleResize = () => {
-                // 화면 크기에 따라 뷰 상태를 재평가
+                const isDesktop = window.innerWidth >= 768;
+                if (!isDesktop) { // 모바일로 전환될 때만 isLyricsVisible을 초기화
+                    isLyricsVisible = false;
+                }
                 toggleInPlaceLyricsView(isLyricsVisible); // 현재 isLyricsVisible 상태 전달
             };
             window.addEventListener('resize', handleResize);
