@@ -1,0 +1,17 @@
+[build]
+  edge_functions = "netlify/edge-functions"
+
+[[edge_functions]]
+  # 기존: path = "/*"
+  path = "/" # 홈페이지 (루트 경로)에만 Edge Function 실행
+  function = "log-ip"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "all"
+
+[[headers]]
+  for = "/**/*.opus"
+  [headers.values]
+    Content-Type = "audio/ogg; codecs=opus"
