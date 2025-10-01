@@ -2,10 +2,10 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>Spotify 계정 + YouTube 재생 데모 (콜백 연동)</title>
+  <title>Spotify 계정 + YouTube 재생 (서버 콜백 전담형)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root { --bg:#0f1115; --panel:#151925; --accent:#1db954; --text:#e5e7eb; --muted:#a3a7b0; --border:#22283a; --danger:#ef4444; }
+    :root { --bg:#0b0d12; --panel:#151925; --accent:#1db954; --text:#e5e7eb; --muted:#a3a7b0; --border:#22283a; --danger:#ef4444; }
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(180deg,#0b0d12 0%,#0f1115 100%);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,Apple Color Emoji,Segoe UI Emoji}
     header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:#0f1115cc;backdrop-filter:blur(6px);position:sticky;top:0;z-index:10}
@@ -52,12 +52,14 @@
 </header>
 
 <main class="layout">
+  <!-- 좌측: Spotify 플레이리스트 -->
   <section class="panel" id="panelPlaylists">
     <h2>내 플레이리스트</h2>
     <div class="notice">항목을 클릭하면 같은 곡명을 YouTube에서 찾아 재생합니다.</div>
     <div class="scroll" id="playlistList"><div class="empty">로그인 후 불러옵니다.</div></div>
   </section>
 
+  <!-- 중앙: YouTube 플레이어 -->
   <section class="panel" id="panelPlayer">
     <h2>YouTube 플레이어</h2>
     <div class="searchbar">
@@ -81,41 +83,33 @@
     </div>
   </section>
 
+  <!-- 우측: 개인화 추천 -->
   <section class="panel" id="panelPersonal">
     <h2>개인화 추천</h2>
-    <div class="notice">Spotify 추천/탑 트랙을 기반으로 제목 검색 → YouTube 재생합니다.</div>
+    <div class="notice">Spotify 개인화 데이터를 YouTube로 매칭해 재생합니다.</div>
     <div class="scroll" id="personalList"><div class="empty">로그인 후 불러옵니다.</div></div>
   </section>
 </main>
 
 <script>
-  // ===== 환경 설정 =====
-  const YT_API_KEY = "AIzaSyAIhw6pfhduLDZRdv5FqzddSBqHjMQQzEE"; // 데모 노출 주의
-  const SPOTIFY_CLIENT_ID = "YOUR_SPOTIFY_CLIENT_ID"; // 필요 시 사용
-  const SPOTIFY_REDIRECT_URI = location.origin + "/callback"; // 콜백 고정
-  const SPOTIFY_SCOPES = [
-    "playlist-read-private",
-    "playlist-read-collaborative",
-    "user-read-recently-played",
-    "user-top-read"
-  ].join(" ");
+  // ===== 설정 =====
+  // 실제 서비스에서는 키를 서버에서 보호하세요(도메인 제한/프록시 권장)
+  const YT_API_KEY = "AIzaSyAIhw6pfhduLDZRdv5FqzddSBqHjMQQzEE"; // 제공된 키
+  // Spotify는 서버 콜백이 전담하므로 CLIENT_ID/authorize URL 불필요
 
-  // ===== 전역 상태 =====
+  // ===== 상태 =====
   let spotifyToken = null;
   let ytPlayer = null;
   let currentQueue = []; // { title, channel, videoId }
   let currentIndex = -1;
 
-  // ===== 토큰 처리 (콜백 연동) =====
-  // 1) /callback에서 window.opener 또는 리다이렉트로 본 페이지에 토큰 전달한다고 가정
-  // 2) 쿼리 또는 해시에 access_token이 있으면 회수
+  // ===== 토큰 회수(콜백 전담) =====
+  // /callback에서 access_token을 해시 또는 쿼리로 넘기거나, postMessage로 전달한다고 가정
   function readTokenFromUrl() {
-    // 해시 우선
     const hash = location.hash.startsWith("#") ? location.hash.slice(1) : "";
     const h = new URLSearchParams(hash);
     const t1 = h.get("access_token");
 
-    // 쿼리도 검사
     const q = new URLSearchParams(location.search);
     const t2 = q.get("access_token");
 
@@ -123,8 +117,7 @@
     if (token) {
       sessionStorage.setItem("spotify_access_token", token);
       spotifyToken = token;
-      // URL 정리
-      const cleanUrl = location.origin + location.pathname;
+      const cleanUrl = location.origin + location.pathname; // 깔끔한 URL로 정리
       history.replaceState(null, "", cleanUrl);
     }
   }
@@ -135,18 +128,7 @@
     return spotifyToken;
   }
 
-  // 필요 시 수동 로그인(콜백이 알아서 처리해도 대비해 둠)
-  function buildAuthUrl() {
-    const p = new URL("https://accounts.spotify.com/authorize");
-    p.searchParams.set("client_id", SPOTIFY_CLIENT_ID);
-    p.searchParams.set("response_type", "token"); // 데모용
-    p.searchParams.set("redirect_uri", SPOTIFY_REDIRECT_URI);
-    p.searchParams.set("scope", SPOTIFY_SCOPES);
-    p.searchParams.set("show_dialog", "true");
-    return p.toString();
-  }
-
-  // ===== Spotify 페치 헬퍼 =====
+  // ===== Spotify API 헬퍼 =====
   async function sFetch(path, init = {}) {
     const token = getToken();
     if (!token) throw new Error("Spotify 미인증");
@@ -166,7 +148,7 @@
     return res.json();
   }
 
-  // ===== Spotify 데이터 로딩 =====
+  // ===== Spotify 데이터 =====
   async function loadPlaylists() {
     const listEl = document.getElementById("playlistList");
     listEl.innerHTML = "<div class='empty'>불러오는 중…</div>";
@@ -285,7 +267,7 @@
     url.searchParams.set("part", "snippet");
     url.searchParams.set("q", query);
     url.searchParams.set("type", "video");
-    url.searchParams.set("videoCategoryId", "10");
+    url.searchParams.set("videoCategoryId", "10"); // Music
     url.searchParams.set("maxResults", "1");
     try {
       const res = await fetch(url);
@@ -325,10 +307,8 @@
 
   // ===== 이벤트 =====
   document.getElementById("btnLogin").addEventListener("click", () => {
-    // 콜백이 전담한다고 하셨으니, 필요 시 /callback으로 이동하여 인증 트리거
-    // 또는 Spotify authorize URL로 직접 이동
-    // location.href = "/callback"; // 서버에서 인증 시작
-    location.href = buildAuthUrl();  // 필요 시 해제/교체
+    // 서버 콜백이 인증 전체 전담 → 프런트는 /callback으로만 이동
+    location.href = "/callback";
   });
   document.getElementById("btnRefresh").addEventListener("click", () => {
     if (!getToken()) { alert("먼저 로그인해 주세요."); return; }
@@ -373,15 +353,6 @@
     }
   });
 
-  document.getElementById("btnNext").addEventListener("click", nextTrack);
-  document.getElementById("btnPrev").addEventListener("click", prevTrack);
-  document.getElementById("btnPlayPause").addEventListener("click", () => {
-    if (!ytPlayer) return;
-    const state = ytPlayer.getPlayerState();
-    if (state === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-    else ytPlayer.playVideo();
-  });
-
   // ===== YouTube IFrame API =====
   function createPlayer(videoId) {
     if (window.YT && YT.Player) {
@@ -414,14 +385,14 @@
   // ===== 보조 =====
   function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  // ===== 부트스트랩 =====
+  // ===== 초기 부트 =====
   (function init() {
-    // /callback에서 리다이렉트돼 왔을 때 토큰 회수
+    // 1) /callback에서 돌아오며 붙은 토큰 회수(해시/쿼리)
     readTokenFromUrl();
 
-    // window.opener를 통해 postMessage로 토큰을 받을 수도 있음(선택 사항)
+    // 2) postMessage로 토큰을 받을 수도 있음(팝업 구조 지원)
     window.addEventListener("message", (ev) => {
-      // 보안상 origin 체크 권장: if (ev.origin !== 'https://your-domain') return;
+      // 실제 서비스에서는 ev.origin 검증을 반드시 하세요.
       if (ev.data && ev.data.spotify_access_token) {
         sessionStorage.setItem("spotify_access_token", ev.data.spotify_access_token);
         spotifyToken = ev.data.spotify_access_token;
@@ -430,12 +401,19 @@
       }
     });
 
+    // 3) 토큰 존재 시 데이터 로드, 없으면 /callback으로 위임
     if (getToken()) {
       loadPlaylists().catch(err => {
         console.warn(err);
-        if (String(err.message || "").includes("토큰 만료")) alert("세션이 만료되어 다시 로그인해 주세요.");
+        if (String(err.message || "").includes("토큰 만료")) {
+          alert("세션이 만료되어 다시 로그인해 주세요.");
+          location.href = "/callback";
+        }
       });
       loadPersonal().catch(console.warn);
+    } else {
+      // 자동 위임: 프런트는 인증 흐름에 관여하지 않음
+      location.href = "/callback";
     }
   })();
 </script>
