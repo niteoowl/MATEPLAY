@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify 토큰 발급 콜백</title>
+    <!-- Tailwind CSS CDN 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-2xl bg-white p-8 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 text-center">
+            Spotify 인증 결과
+        </h1>
+        
+        <!-- 상태 메시지 영역 -->
+        <p id="status" class="text-xl text-center text-gray-500 mb-6 font-semibold">
+            페이지 로드 중...
+        </p>
+
+        <!-- 인증 시작 프롬프트 (code 없을 때 표시) -->
+        <div id="initial-prompt-container" class="hidden text-center p-6 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50 space-y-4 shadow-inner">
+            <p class="text-lg font-medium text-blue-700">인증 코드가 필요합니다.</p>
+            <p class="text-gray-600 text-sm">이 페이지는 Spotify에서 리디렉션될 때만 작동합니다. 아래 버튼을 눌러 인증 흐름을 시작하세요.</p>
+            <button id="start-auth-button" onclick="redirectToSpotifyAuth()" class="w-full sm:w-auto mt-4 px-8 py-3 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition duration-150 shadow-xl transform hover:scale-105">
+                🚀 Spotify 로그인 시작
+            </button>
+        </div>
+
+        <!-- 성공 결과 카드 -->
+        <div id="result-card" class="hidden border border-green-200 bg-green-50 p-6 rounded-lg space-y-4">
+            <h2 class="text-xl font-bold text-green-700">발급된 토큰 정보</h2>
+            <div class="space-y-3 text-sm">
+                <div class="bg-white p-3 rounded-md shadow-inner">
+                    <p class="font-medium text-gray-600">액세스 토큰 (Access Token):</p>
+                    <p id="access-token" class="break-all text-gray-800 font-mono mt-1 text-xs sm:text-sm"></p>
+                </div>
+                <div class="bg-white p-3 rounded-md shadow-inner">
+                    <p class="font-medium text-gray-600">갱신 토큰 (Refresh Token):</p>
+                    <p id="refresh-token" class="break-all text-gray-800 font-mono mt-1 text-xs sm:text-sm"></p>
+                </div>
+                <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-3 sm:space-y-0">
+                    <div class="bg-white p-3 rounded-md shadow-inner flex-1">
+                        <p class="font-medium text-gray-600">토큰 타입:</p>
+                        <p id="token-type" class="text-gray-800 mt-1"></p>
+                    </div>
+                    <div class="bg-white p-3 rounded-md shadow-inner flex-1">
+                        <p class="font-medium text-gray-600">만료 시간:</p>
+                        <p id="expires-in" class="text-gray-800 mt-1"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 class="text-lg font-bold text-gray-700 mt-4 pt-4 border-t border-green-200">원시 응답 데이터</h3>
+            <pre id="raw-response" class="bg-gray-800 text-green-300 p-3 rounded-md overflow-x-auto text-xs"></pre>
+        </div>
+
+        <!-- 오류 결과 카드 -->
+        <div id="error-card" class="hidden border border-red-300 bg-red-50 p-6 rounded-lg space-y-4">
+            <h2 class="text-xl font-bold text-red-700">오류 발생</h2>
+            <p id="error-details" class="text-red-800 whitespace-pre-wrap"></p>
+            <p class="text-sm text-red-600 mt-4">
+                ⚠️ **중요 보안 경고**: 토큰 교환은 클라이언트 시크릿을 안전하게 처리하기 위해 **반드시 서버(백엔드)에서 이루어져야 합니다.** 현재 클라이언트 측 코드는 테스트 목적으로만 사용해야 합니다.
+            </p>
+        </div>
+
+        <!-- 버튼 컨테이너 -->
+        <div id="button-container" class="mt-8">
+            <button id="back-button" onclick="window.history.back()" class="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-150 shadow-md">
+                돌아가기
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Spotify API 설정
+        const CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f';
+        const REDIRECT_URI = 'https://play.nmate.kr/callback'; // Spotify 개발자 대시보드에 등록된 값과 정확히 일치해야 합니다.
+
+        /**
+         * Spotify 인증 시작 URL로 리디렉션합니다.
+         */
+        function redirectToSpotifyAuth() {
+            // 필요한 스코프를 여기에 정의합니다. (예: 개인 정보 읽기, 플레이리스트 읽기)
+            const scopes = 'user-read-private user-read-email playlist-read-private user-library-read'; 
+            // CSRF 공격 방지를 위한 state (여기서는 예시이므로 단순하게 생성)
+            const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            
+            const authUrl = 'https://accounts.spotify.com/authorize?' +
+                'response_type=code' +
+                '&client_id=' + CLIENT_ID +
+                '&scope=' + encodeURIComponent(scopes) +
+                '&redirect_uri=' + encodeURIComponent(REDIRECT_URI) +
+                '&state=' + state; 
+            
+            window.location.href = authUrl;
+        }
+
+
+        /**
+         * 오류 메시지를 화면에 표시합니다.
+         * @param {string} message - 주요 오류 메시지 (한국어)
+         * @param {string} details - 상세 오류 정보
+         */
+        function displayError(message, details = '자세한 정보 없음') {
+            document.getElementById('status').textContent = `❌ ${message}`;
+            document.getElementById('status').className = 'text-red-600 font-bold text-2xl mb-4';
+            document.getElementById('error-details').textContent = `상세: ${details}`;
+            document.getElementById('error-card').classList.remove('hidden');
+        }
+
+        /**
+         * 성공적으로 발급된 토큰 정보를 화면에 표시합니다.
+         * @param {object} data - Spotify API 응답 데이터 (토큰 포함)
+         */
+        function displaySuccess(data) {
+            document.getElementById('status').textContent = '✅ 토큰 발급 성공!';
+            document.getElementById('status').className = 'text-green-600 font-bold text-2xl mb-4';
+            document.getElementById('result-card').classList.remove('hidden');
+
+            document.getElementById('access-token').textContent = data.access_token || 'N/A';
+            document.getElementById('refresh-token').textContent = data.refresh_token || 'N/A';
+            document.getElementById('token-type').textContent = data.token_type || 'N/A';
+            document.getElementById('expires-in').textContent = `${data.expires_in || 'N/A'} 초`;
+
+            // 원시 응답 데이터를 JSON 포맷으로 표시
+            document.getElementById('raw-response').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        /**
+         * 인증 코드를 사용하여 Spotify API 토큰을 교환합니다.
+         * @param {string} code - URL에서 추출한 인증 코드
+         */
+        async function exchangeCodeForToken(code) {
+            const tokenUrl = 'https://accounts.spotify.com/api/token';
+            
+            // POST 요청을 위한 본문 데이터 설정
+            const body = new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: REDIRECT_URI,
+                client_id: CLIENT_ID, 
+                // client_secret이 없으므로 Authorization Code Flow with PKCE를 흉내내거나 
+                // client_secret이 필요 없는 flow가 아닐 경우 실패할 수 있습니다.
+            });
+
+            try {
+                // API 요청을 처리하는 fetch 함수 (exponential backoff 구현)
+                const fetchWithBackoff = async (url, options, retries = 3) => {
+                    for (let i = 0; i < retries; i++) {
+                        const response = await fetch(url, options);
+                        if (response.status !== 429) return response; // 429가 아니면 성공 또는 일반 오류
+                        
+                        // 429 Too Many Requests 처리: Retry-After 헤더 사용 또는 지수 백오프
+                        const retryAfter = response.headers.get('Retry-After');
+                        const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, i) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                    throw new Error('최대 재시도 횟수 초과');
+                };
+
+                const response = await fetchWithBackoff(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: body.toString()
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displaySuccess(data);
+                } else {
+                    // Spotify API가 반환한 오류를 표시
+                    const errorMessage = data.error_description || data.error || '알 수 없는 오류';
+                    displayError(`토큰 발급 오류 (HTTP ${response.status})`, `Spotify 메시지: ${errorMessage}\n\n${JSON.stringify(data, null, 2)}`);
+                }
+            } catch (error) {
+                // 네트워크 또는 재시도 오류를 표시
+                displayError('네트워크 요청 실패', error.message);
+            }
+        }
+
+        // 페이지 로드 시 메인 로직 실행
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const error = params.get('error');
+
+            // 기본적으로 모든 결과/프롬프트/버튼 숨김/표시 처리
+            document.getElementById('initial-prompt-container').classList.add('hidden');
+            document.getElementById('result-card').classList.add('hidden');
+            document.getElementById('error-card').classList.add('hidden');
+            document.getElementById('back-button').classList.remove('hidden'); // '돌아가기' 버튼은 기본 표시
+
+            if (error) {
+                // 1. Spotify 인증 과정에서 오류가 발생했을 때 (사용자 거부 등)
+                displayError(`Spotify 인증 오류 발생: ${error}`, params.get('error_description') || '사용자가 인증을 거부했거나 오류가 발생했습니다.');
+            } else if (code) {
+                // 2. 인증 코드가 URL에 있을 때 (성공적인 리디렉션)
+                document.getElementById('status').textContent = '⏳ 토큰 발급을 위해 코드를 교환하는 중...';
+                exchangeCodeForToken(code);
+            } else {
+                // 3. 코드나 오류가 URL에 없을 때 (직접 페이지 접속)
+                document.getElementById('status').textContent = '⚠️ 인증 흐름을 시작해야 합니다.';
+                document.getElementById('status').className = 'text-xl text-center text-gray-500 mb-6 font-semibold';
+                document.getElementById('initial-prompt-container').classList.remove('hidden');
+                document.getElementById('back-button').classList.add('hidden'); // 시작 화면에서는 '돌아가기' 버튼 숨김
+            }
+        };
+    </script>
+</body>
+</html>
