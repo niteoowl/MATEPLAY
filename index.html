@@ -107,7 +107,9 @@
       display:grid; grid-template-rows:auto 1fr auto; height:100%;
     }
     .content{
-      display:grid; grid-template-rows:auto auto 1fr; gap:0px; padding:12px; height:calc(100vh - 160px);
+      display:grid; grid-template-rows:auto auto 1fr; gap:0px; padding:12px; 
+      /* 하단 플레이어 높이(70px) 반영하여 높이 조정 */
+      height:calc(100vh - 70px - 58px); 
     }
 
     /* 검색/탭 */
@@ -180,41 +182,92 @@
     }
 
 
-    /* 플레이어 바 */
-    .player{
-      position:fixed; left:0; right:0; bottom:0; background:rgba(15,17,21,0.9); backdrop-filter: blur(10px);
-      border-top:1px solid rgba(255,255,255,0.06);
-      padding:10px 12px; display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+    /* === [대폭 개선] 플레이어 바 스타일 === */
+    /* NEW: Visual Progress Bar Container */
+    .player-bar-container {
+        position: fixed; left: 0; right: 0; bottom: 0; 
+        z-index: 100; /* Ensure it's above content */
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
     }
-    .now{
-      display:flex; align-items:center; gap:10px; min-width:0;
-    }
-    .now .thumb{ width:48px; height:48px }
-    .now .title{ font-size:13px }
-    .now .subtitle{ font-size:11px }
 
-    .controls-row{
-      display:flex; align-items:center; gap:10px;
+    /* NEW: Visual Progress Bar (상단 녹색 바) */
+    #progressBar {
+        height: 3px; 
+        width: 0%; /* Controlled by JS */
+        background: var(--accent); /* Spotify Green */
+        transition: width 0.5s linear; /* Smooth transition */
     }
+
+    /* NEW: Main Player Bar */
+    .player{
+        background: #000; /* 완전 검은색으로 변경 (이미지 배경) */
+        padding: 8px 16px; /* 패딩 조정 */
+        display: flex; /* Flexbox 레이아웃 */
+        justify-content: space-between; /* 양 끝 정렬 */
+        align-items: center;
+        gap: 12px;
+        height: 70px; /* 고정 높이 */
+    }
+    
+    .now{
+      display:flex; align-items:center; gap:12px; min-width:0;
+      flex-grow: 1; /* 왼쪽 공간 최대한 차지 */
+    }
+    .now .thumb{ 
+      width: 54px; height: 54px; border-radius: 4px; 
+      flex: 0 0 54px; /* 크기 고정 */
+    }
+    .now .meta{ 
+        flex:1; 
+        min-width:0;
+        text-align: left; /* 텍스트 왼쪽 정렬 */
+    }
+    .now .title{ 
+      font-size: 16px; /* 제목 크게 */
+      font-weight: 700; 
+      color: white; /* 흰색으로 변경 */
+    }
+    .now .subtitle{ 
+      font-size: 14px; /* 부제목 크게 */
+      color: #a0a0a0; /* 약간 회색 */
+      margin-top: 2px;
+    }
+
+    /* 컨트롤 영역 */
+    .controls-row{
+      display:flex; align-items:center; gap: 8px; /* 버튼 간격 좁게 */
+      flex-shrink: 0;
+    }
+    
+    /* 재생 버튼 스타일 */
     .btn{
-      appearance:none; border:none; outline:none; background:#232a3d; color:var(--text);
-      border:1px solid rgba(255,255,255,0.06); width:38px; height:38px; border-radius:10px;
+      appearance:none; border:none; outline:none;
+      background: transparent; /* 배경 투명 */
+      color: white; /* 아이콘 흰색 */
+      width: 48px; height: 48px; /* 버튼 크기 대폭 확대 */
+      border-radius: 50%; /* 원형 버튼 */
+      border: none; 
+      font-size: 24px; 
       display:grid; place-items:center; cursor:pointer;
       transition: background 0.1s;
     }
-    .btn:hover{ background:#2e3549; }
-    .btn.primary{ background:var(--accent); color:#0a0d12; font-weight:800; border:none; }
-    .btn.primary:hover{ background:#18a34b; }
-    .time{
-      display:flex; align-items:center; gap:8px; color:#aeb6cc; font-size:11px; margin-top:6px;
+    .btn:hover{ background: rgba(255, 255, 255, 0.1); } 
+
+    .btn.primary{ 
+      background: white; /* 재생 버튼만 흰색 배경 */
+      color: black; /* 아이콘 검은색 */
+      font-size: 28px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5); /* 재생 버튼에 그림자 추가 */
     }
-    .seek{
-      appearance:none; width:100%; height:6px; border-radius:999px; background:#232a3d; outline:none;
-    }
-    .seek::-webkit-slider-thumb{
-      -webkit-appearance:none; appearance:none; width:14px; height:14px; border-radius:50%; background:var(--accent); border:2px solid #0a0d12;
-      margin-top:-4px;
-    }
+    .btn.primary:hover{ background: #e0e0e0; }
+
+    /* 숨겨야 할 요소들 */
+    .player-bar-container .time, .player-bar-container #seek { 
+        position:absolute; 
+        left:-9999px; /* 기능 유지를 위해 화면 밖으로 이동 */
+    } 
+    /* === 플레이어 바 스타일 끝 === */
+
 
     /* 유틸 */
     .hidden{ display:none !important }
@@ -310,28 +363,49 @@
     <div id="list" class="grid" role="list" data-current-view="playlists"></div>
   </div>
 
-  <div class="player">
-    <div class="now">
-        <div id="nowThumb" class="thumb">🎶</div>
-        <div class="meta">
-            <div id="nowTitle" class="title">—</div>
-            <div id="nowSubtitle" class="subtitle">재생할 항목을 선택하세요</div>
-        </div>
-    </div>
-    <div style="flex:1; min-width:0">
-        <div class="controls-row">
-            <button id="prevBtn" class="btn">⏮</button>
-            <button id="playPauseBtn" class="btn primary">▶</button>
-            <button id="nextBtn" class="btn">⏭</button>
-            <button id="muteBtn" class="btn">🔊</button>
-        </div>
-        <div class="time">
-            <span id="curTime">0:00</span>
-            <input type="range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="재생 위치" />
-            <span id="durTime">0:00</span>
-        </div>
-    </div>
+  <!-- === 개선된 플레이어 바 (Progress Bar 포함) === -->
+  <div class="player-bar-container">
+      <!-- 시각적 프로그레스 바 -->
+      <div id="progressBar"></div> 
+      <div class="player">
+          <!-- 1. 현재 재생 정보 -->
+          <div class="now">
+              <div id="nowThumb" class="thumb">🎶</div>
+              <div class="meta">
+                  <div id="nowTitle" class="title">—</div>
+                  <div id="nowSubtitle" class="subtitle">재생할 항목을 선택하세요</div>
+              </div>
+          </div>
+          
+          <!-- 2. 컨트롤 버튼 -->
+          <div class="controls-row">
+              <!-- 이전 트랙 버튼 (SVG) -->
+              <button id="prevBtn" class="btn">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"></path></svg>
+              </button>
+              <!-- 재생/일시정지 버튼 (SVG) -->
+              <button id="playPauseBtn" class="btn primary">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+              </button>
+              <!-- 다음 트랙 버튼 (SVG) -->
+              <button id="nextBtn" class="btn">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6v12h2V6zM6 18l8.5-6L6 6z"></path></svg>
+              </button>
+          </div>
+      </div>
+      
+      <!-- 3. 기능 유지를 위해 화면 밖으로 이동된 요소 -->
+      <div id="hiddenPlayerControls" class="hidden">
+          <!-- 기존 seek bar, time, mute 버튼은 기능 유지를 위해 숨깁니다 -->
+          <button id="muteBtn" class="btn">🔊</button>
+          <div class="time">
+              <span id="curTime">0:00</span>
+              <input type="range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="재생 위치" />
+              <span id="durTime">0:00</span>
+          </div>
+      </div>
   </div>
+  <!-- ============================================= -->
 </div>
 
 <!-- === [추가] 플레이리스트 선택 모달 === -->
@@ -643,6 +717,13 @@
           backBtn.className = 'btn';
           backBtn.innerHTML = '←'; // Back arrow
           backBtn.style.marginRight = '10px';
+          // [개선] 새 플레이어 스타일 적용을 위해 일반 btn 대신 logout-btn 클래스 사용
+          backBtn.className = 'logout-btn'; 
+          backBtn.style.width = '38px';
+          backBtn.style.height = '38px';
+          backBtn.style.borderRadius = '10px';
+          backBtn.style.fontSize = '18px';
+          
           backBtn.addEventListener('click', () => {
               setTabs('playlists'); // 플레이리스트 탭으로 돌아가기
               loadPlaylists(); 
@@ -752,9 +833,6 @@
         // 현재 사용자 ID
         const currentUserSpotifyId = currentFirebaseUser?.uid; // Spotify ID는 Spotify API 호출로 가져와야 하지만, 편의상 Firebase UID를 사용한다고 가정
 
-        // 내가 만들었거나 (owner.id === user.id) 또는 공동 작업 가능한 (collaborative: true) 플레이리스트를 필터링
-        const playlists = (data.items || []).filter(p => p.owner?.id === currentUserSpotifyId || p.collaborative || p.owner?.display_name === "사용자 이름");
-        
         // 실제 Spotify User ID를 가져오는 로직 추가 (첫 로그인 시에만 실행)
         let userId = '';
         try {
@@ -762,6 +840,7 @@
             userId = meData.id;
         } catch(e) { /* 무시 */ }
 
+        // 내가 만들었거나 (owner.id === user.id) 또는 공동 작업 가능한 (collaborative: true) 플레이리스트를 필터링
         const finalPlaylists = (data.items || []).filter(p => p.owner?.id === userId || p.collaborative);
 
         modifiablePlaylists = finalPlaylists;
@@ -1080,14 +1159,25 @@
       }
     });
   }
+  
+  /**
+   * 재생 상태 변경 시 호출 (아이콘 변경 및 다음 곡 재생 처리)
+   */
   function onYTStateChange(e){
     const state = e.data;
+    const playPauseBtn = $('#playPauseBtn');
+    
+    // SVG icons for Play and Pause
+    const playSVG = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>';
+    const pauseSVG = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6zm8-14v14h4V5z"></path></svg>';
+
     if(state === 1){
-      $('#playPauseBtn').textContent = '⏸';
+      playPauseBtn.innerHTML = pauseSVG; // 재생 중일 때 일시정지 아이콘
       setError('');
     }else if(state === 2 || state === 5){
-      $('#playPauseBtn').textContent = '▶';
+      playPauseBtn.innerHTML = playSVG; // 일시정지/버퍼링 중일 때 재생 아이콘
     }else if(state === 0){
+      playPauseBtn.innerHTML = playSVG; // 종료 시 재생 아이콘
       if(queueIndex < queue.length - 1){
         queueIndex++;
         playQueueIndex(queueIndex, true);
@@ -1174,6 +1264,7 @@
     $('#nextBtn').addEventListener('click', () => {
       if(queueIndex < queue.length - 1){ queueIndex++; playQueueIndex(queueIndex, true); }
     });
+    // [유지] 기능 유지를 위해 숨겨진 음소거 버튼 컨트롤 이벤트는 유지
     $('#muteBtn').addEventListener('click', () => {
       if(!ytPlayer) return;
       if(ytPlayer.isMuted()) ytPlayer.unMute(); else ytPlayer.mute();
@@ -1194,6 +1285,7 @@
     $('#searchIcon').addEventListener('click', searchHandler);
 
 
+    // [유지] 기능 유지를 위해 숨겨진 seek bar input 이벤트는 유지
     $('#seek').addEventListener('input', (e) => {
       const v = Number(e.target.value);
       if(ytPlayer){
@@ -1220,16 +1312,28 @@
     });
   }
   
+  /**
+   * 재생 진행 상태 업데이트 (숨겨진 seek bar와 시각적 progress bar를 모두 업데이트)
+   */
   function setupProgressTimer(){
     if(progressTimer) clearInterval(progressTimer);
+    const progressBar = $('#progressBar'); 
     progressTimer = setInterval(() => {
       if(!ytPlayer) return;
       const d = ytPlayer.getDuration() || 0;
       const c = ytPlayer.getCurrentTime() || 0;
+      
+      // Hidden elements update (for functionality)
       $('#curTime').textContent = formatTime(c);
       $('#durTime').textContent = formatTime(d);
+      
       const ratio = d ? Math.min(100, Math.max(0, (c/d)*100)) : 0;
-      $('#seek').value = String(Math.floor(ratio));
+      
+      // Update the hidden seek bar (for input tracking/scrubbing logic)
+      $('#seek').value = String(Math.floor(ratio)); 
+      
+      // Update the visual progress bar
+      progressBar.style.width = `${ratio}%`; 
     }, 500);
   }
   
