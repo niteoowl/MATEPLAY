@@ -38,7 +38,7 @@
     .auth-area {
       display: flex;
       align-items: center;
-      gap: 12px; /* Spotify와 Firebase 영역 사이 간격 */
+      gap: 12px; 
     }
 
     .login-btn, .logout-btn{
@@ -115,6 +115,7 @@
     .pill{
       white-space:nowrap; padding:8px 12px; border-radius:999px; background:var(--panel);
       border:1px solid rgba(255,255,255,0.06); color:var(--muted); font-size:13px;
+      cursor:pointer;
     }
     .pill.active{ background:#1ed76022; color:var(--text); border-color:#1ed76055 }
 
@@ -214,7 +215,7 @@
         <button id="loginBtn" class="login-btn">Spotify 로그인</button>
         <button id="logoutBtn" class="logout-btn hidden">Spotify 로그아웃</button>
       </div>
-      <!-- Firebase Auth -->
+      <!-- Firebase Auth (개선된 칩 스타일) -->
       <div id="firebaseAuthControl" style="display:flex; align-items:center;">
         <button id="firebaseLoginBtn" class="login-btn">로그인</button>
         <div id="userInfo" class="hidden">
@@ -227,7 +228,14 @@
 
   <div class="content">
     <div class="controls">
-<!-- ... (Controls content) ... -->
+        <!-- ⭐️ Spotify 기능: 탭 및 검색창 복구 완료 ⭐️ -->
+        <div id="tabPlaylists" class="pill active">플레이리스트</div>
+        <div id="tabLiked" class="pill">좋아요한 트랙</div>
+        <div id="tabRec" class="pill">추천 트랙</div>
+        <div class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="searchInput" placeholder="YouTube에서 바로 검색..." />
+        </div>
     </div>
 
     <div id="errorBox" class="err hidden"></div>
@@ -237,7 +245,27 @@
   </div>
 
   <div class="player">
-<!-- ... (Player content) ... -->
+    <!-- ⭐️ Spotify 기능: 플레이어 컨트롤 복구 완료 ⭐️ -->
+    <div class="now">
+        <div id="nowThumb" class="thumb">🎶</div>
+        <div class="meta">
+            <div id="nowTitle" class="title">—</div>
+            <div id="nowSubtitle" class="subtitle">재생할 항목을 선택하세요</div>
+        </div>
+    </div>
+    <div style="flex:1; min-width:0">
+        <div class="controls-row">
+            <button id="prevBtn" class="btn">⏮</button>
+            <button id="playPauseBtn" class="btn primary">▶</button>
+            <button id="nextBtn" class="btn">⏭</button>
+            <button id="muteBtn" class="btn">🔊</button>
+        </div>
+        <div class="time">
+            <span id="curTime">0:00</span>
+            <input type="range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="재생 위치" />
+            <span id="durTime">0:00</span>
+        </div>
+    </div>
   </div>
 </div>
 
@@ -399,7 +427,6 @@
   // 유틸
   const $ = sel => document.querySelector(sel);
   const $$ = sel => document.querySelectorAll(sel);
-// ... (나머지 유틸 함수, Spotify 로직, YouTube 로직은 이전과 동일) ...
 
   const ms = s => Math.floor(s).toString().padStart(2,'0');
   function formatTime(sec){
