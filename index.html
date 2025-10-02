@@ -493,8 +493,12 @@
   // 🔄 Spotify PKCE Login (Step 1) 🔄
   // -------------------------
   async function login(){
+    // 이전 에러 메시지 제거
+    setError(''); 
+    
     const codeVerifier = generateRandomString(128);
     // Code Verifier는 Code Challenge를 생성하고 Token 교환 시 사용하기 위해 저장
+    // 중요: 이 시점에 저장해야 Spotify 리다이렉트 후에도 남아있습니다.
     localStorage.setItem('spotify_code_verifier', codeVerifier); 
     
     const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -518,6 +522,7 @@
     const code = params.get('code');
     const error = params.get('error'); // 에러 처리
     
+    // 1. Spotify 자체 에러 처리
     if(error) {
         window.history.replaceState({}, document.title, window.location.pathname);
         setError(`Spotify 로그인 중 오류 발생: ${error}`);
@@ -526,7 +531,15 @@
     
     const verifier = localStorage.getItem('spotify_code_verifier');
     
-    // code가 없거나 verifier가 없으면 Spotify 콜백이 아님
+    // 2. PKCE 검증 키 누락 예외 처리 (사용자 오류 해결)
+    if (code && !verifier) {
+        // 인증 코드는 URL에 있으나, 브라우저 저장소의 키가 누락된 경우
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setError('❌ 인증 코드는 받았으나, PKCE 보안 검증 키를 찾을 수 없습니다. 브라우저의 저장소가 지워졌거나 유효하지 않은 콜백입니다. 로그인 과정을 다시 시작해 주세요.');
+        return false;
+    }
+
+    // code가 없거나 verifier가 없으면 Spotify 콜백이 아님 (일반 페이지 로드)
     if(!code || !verifier) return false; 
 
     // Code와 Verifier를 사용했으므로 바로 제거
@@ -560,6 +573,7 @@
       $('#loginBtn').classList.add('hidden');
       $('#logoutBtn').classList.remove('hidden');
       loadPlaylists();
+      setHint('✅ Spotify 인증 성공! 플레이리스트를 불러왔습니다.');
       return true;
 
     } catch(e) {
