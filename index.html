@@ -228,7 +228,6 @@
 
   <div class="content">
     <div class="controls">
-        <!-- ⭐️ Spotify 기능: 탭 및 검색창 복구 완료 ⭐️ -->
         <div id="tabPlaylists" class="pill active">플레이리스트</div>
         <div id="tabLiked" class="pill">좋아요한 트랙</div>
         <div id="tabRec" class="pill">추천 트랙</div>
@@ -245,7 +244,6 @@
   </div>
 
   <div class="player">
-    <!-- ⭐️ Spotify 기능: 플레이어 컨트롤 복구 완료 ⭐️ -->
     <div class="now">
         <div id="nowThumb" class="thumb">🎶</div>
         <div class="meta">
@@ -272,12 +270,13 @@
 <!-- YouTube IFrame API & Application Logic -->
 <script type="module">
   // Firebase SDKs Import
+  // signInAnonymously를 제거했습니다.
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
   // 환경 설정: 반드시 값 교체
-  const SPOTIFY_CLIENT_ID = 'YOUR_SPOTIFY_CLIENT_ID'; // 교체
-  const SPOTIFY_REDIRECT_URI = 'https://your-domain.com/callback'; // 교체 (콜백 URI)
+  const SPOTIFY_CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f'; // 교체된 Client ID
+  const SPOTIFY_REDIRECT_URI = 'https://play.nmate.kr/callback'; // 교체된 콜백 URI
   const SPOTIFY_SCOPES = [
     'user-read-email',
     'playlist-read-private',
@@ -316,30 +315,40 @@
   let firebaseApp;
   let auth;
   let currentFirebaseUser = null;
-  const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+  const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_token : null; // __initial_auth_token 변수 사용
 
-  try {
-    firebaseApp = initializeApp(FIREBASE_CONFIG);
-    auth = getAuth(firebaseApp);
+  async function initializeFirebase() {
+    try {
+        firebaseApp = initializeApp(FIREBASE_CONFIG);
+        auth = getAuth(firebaseApp);
 
-    // 1. Custom Token Sign In (익명 로그인 제외)
-    if (initialAuthToken) {
-      signInWithCustomToken(auth, initialAuthToken)
-        .catch(error => {
-          console.error("Custom token sign-in failed:", error);
-          setError("자동 로그인에 실패했습니다. (Custom Token 오류)");
+        // 1. Custom Token Sign In 시도 (익명 로그인 대체 로직 제거)
+        if (initialAuthToken) {
+            try {
+                // 토큰이 있는 경우에만 signInWithCustomToken 시도
+                await signInWithCustomToken(auth, initialAuthToken);
+                console.log("Custom token sign-in successful.");
+            } catch (error) {
+                console.error("Custom token sign-in failed: No fallback to Anonymous Sign-In.", error);
+                // 토큰 불일치 시 오류 메시지만 표시하고 인증 실패 상태로 유지
+                setError("자동 로그인에 실패했습니다. (유효하지 않은 토큰)");
+            }
+        } else {
+             console.log("No initial custom token provided. User will remain unauthenticated until manual login.");
+        }
+        
+        // 2. Auth State Listener 설정
+        onAuthStateChanged(auth, (user) => {
+            currentFirebaseUser = user;
+            updateFirebaseAuthUI(user);
         });
-    }
 
-    // 2. Auth State Listener: 인증 상태가 변경될 때마다 UI 업데이트
-    onAuthStateChanged(auth, (user) => {
-      currentFirebaseUser = user;
-      updateFirebaseAuthUI(user);
-    });
-  } catch(e) {
-    console.error("Firebase initialization failed:", e);
-    setError('Firebase 초기화 실패: ' + e.message);
+    } catch(e) {
+      console.error("Firebase initialization failed:", e);
+      setError('Firebase 초기화 실패: ' + e.message);
+    }
   }
+
 
   // Firebase 인증 UI 업데이트
   function updateFirebaseAuthUI(user) {
@@ -548,60 +557,6 @@
     root.appendChild(frag);
   }
 
-  // 탭 로직
-  $('#tabPlaylists').addEventListener('click', () => { setTabs('playlists'); loadPlaylists(); });
-  $('#tabLiked').addEventListener('click', () => { setTabs('liked'); loadLiked(); });
-  $('#tabRec').addEventListener('click', () => { setTabs('rec'); loadRecommendations(); });
-  function setTabs(key){
-    $$('.pill').forEach(p => p.classList.remove('active'));
-    if(key === 'playlists') $('#tabPlaylists').classList.add('active');
-    if(key === 'liked') $('#tabLiked').classList.add('active');
-    if(key === 'rec') $('#tabRec').classList.add('active');
-    setError('');
-  }
-
-  // 데이터 로드
-  async function loadPlaylists(){
-    try{
-      setHint('플레이리스트를 불러오는 중…');
-      const me = await spotify('/me');
-      const data = await spotify('/me/playlists', { limit: 50 });
-      renderList(data.items || [], 'playlist');
-      setHint(`${me.display_name}님의 플레이리스트`);
-    }catch(e){ setError(e.message); setHint(''); }
-  }
-  async function loadLiked(){
-    try{
-      setHint('좋아요한 트랙을 불러오는 중…');
-      const data = await spotify('/me/tracks', { limit: 50 });
-      const tracks = (data.items || []).map(it => it.track).filter(Boolean);
-      renderList(tracks, 'track');
-      setHint('좋아요한 트랙');
-    }catch(e){ setError(e.message); setHint(''); }
-  }
-  async function loadRecommendations(){
-    try{
-      setHint('추천 트랙을 불러오는 중…');
-      // 기본 seed: 최근 좋아요 상위 5곡 기반
-      const saved = await spotify('/me/tracks', { limit: 5 });
-      const seedArtists = new Set(), seedTracks = [];
-      (saved.items || []).forEach(it => {
-        const t = it.track; if(!t) return;
-        if(t.artists?.[0]?.id) seedArtists.add(t.artists[0].id);
-        if(t.id) seedTracks.push(t.id);
-      });
-      const params = {};
-      if(seedArtists.size) params.seed_artists = Array.from(seedArtists).slice(0,2).join(',');
-      if(seedTracks.length) params.seed_tracks = seedTracks.slice(0,3).join(',');
-      if(!params.seed_artists && !params.seed_tracks){
-        params.seed_genres = 'pop';
-      }
-      const rec = await spotify('/recommendations', Object.assign({ limit: 30 }, params));
-      renderList(rec.tracks || [], 'track');
-      setHint('맞춤형 추천');
-    }catch(e){ setError(e.message); setHint(''); }
-  }
-
   // 항목 클릭 → 큐 구성 → YouTube 재생
   async function onItemClick(item, type){
     try{
@@ -730,36 +685,115 @@
     }
   }
 
-  // 플레이어 컨트롤
-  $('#playPauseBtn').addEventListener('click', () => {
-    if(!ytPlayer) return ensureYTPlayer();
-    const st = ytPlayer.getPlayerState();
-    if(st === 1){ ytPlayer.pauseVideo(); }
-    else { ytPlayer.playVideo(); }
-  });
-  $('#prevBtn').addEventListener('click', () => {
-    if(queueIndex > 0){ queueIndex--; playQueueIndex(queueIndex, true); }
-  });
-  $('#nextBtn').addEventListener('click', () => {
-    if(queueIndex < queue.length - 1){ queueIndex++; playQueueIndex(queueIndex, true); }
-  });
-  $('#muteBtn').addEventListener('click', () => {
-    if(!ytPlayer) return;
-    if(ytPlayer.isMuted()) ytPlayer.unMute(); else ytPlayer.mute();
-  });
+  // 탭 로직 (initApp에서 실행)
+  function setupTabListeners() {
+      $('#tabPlaylists').addEventListener('click', () => { setTabs('playlists'); loadPlaylists(); });
+      $('#tabLiked').addEventListener('click', () => { setTabs('liked'); loadLiked(); });
+      $('#tabRec').addEventListener('click', () => { setTabs('rec'); loadRecommendations(); });
+  }
 
-  // 검색창 → YouTube 재생
-  $('#searchInput').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter'){
-      const q = e.currentTarget.value.trim();
-      if(!q) return;
-      queue = [{ title: q, artists: '', query: q + ' audio', image: '' }];
-      queueIndex = 0;
-      playQueueIndex(0, true);
-      setHint('YouTube 검색 결과를 재생합니다.');
-    }
-  });
+  function setTabs(key){
+    $$('.pill').forEach(p => p.classList.remove('active'));
+    if(key === 'playlists') $('#tabPlaylists').classList.add('active');
+    if(key === 'liked') $('#tabLiked').classList.add('active');
+    if(key === 'rec') $('#tabRec').classList.add('active');
+    setError('');
+  }
 
+
+  // 데이터 로드
+  async function loadPlaylists(){
+    try{
+      setHint('플레이리스트를 불러오는 중…');
+      const me = await spotify('/me');
+      const data = await spotify('/me/playlists', { limit: 50 });
+      renderList(data.items || [], 'playlist');
+      setHint(`${me.display_name}님의 플레이리스트`);
+    }catch(e){ setError(e.message); setHint(''); }
+  }
+  async function loadLiked(){
+    try{
+      setHint('좋아요한 트랙을 불러오는 중…');
+      const data = await spotify('/me/tracks', { limit: 50 });
+      const tracks = (data.items || []).map(it => it.track).filter(Boolean);
+      renderList(tracks, 'track');
+      setHint('좋아요한 트랙');
+    }catch(e){ setError(e.message); setHint(''); }
+  }
+  async function loadRecommendations(){
+    try{
+      setHint('추천 트랙을 불러오는 중…');
+      // 기본 seed: 최근 좋아요 상위 5곡 기반
+      const saved = await spotify('/me/tracks', { limit: 5 });
+      const seedArtists = new Set(), seedTracks = [];
+      (saved.items || []).forEach(it => {
+        const t = it.track; if(!t) return;
+        if(t.artists?.[0]?.id) seedArtists.add(t.artists[0].id);
+        if(t.id) seedTracks.push(t.id);
+      });
+      const params = {};
+      if(seedArtists.size) params.seed_artists = Array.from(seedArtists).slice(0,2).join(',');
+      if(seedTracks.length) params.seed_tracks = seedTracks.slice(0,3).join(',');
+      if(!params.seed_artists && !params.seed_tracks){
+        params.seed_genres = 'pop';
+      }
+      const rec = await spotify('/recommendations', Object.assign({ limit: 30 }, params));
+      renderList(rec.tracks || [], 'track');
+      setHint('맞춤형 추천');
+    }catch(e){ setError(e.message); setHint(''); }
+  }
+
+
+  // 플레이어 컨트롤 설정 (initApp에서 실행)
+  function setupPlayerControls() {
+    $('#playPauseBtn').addEventListener('click', () => {
+      if(!ytPlayer) return ensureYTPlayer();
+      const st = ytPlayer.getPlayerState();
+      if(st === 1){ ytPlayer.pauseVideo(); }
+      else { ytPlayer.playVideo(); }
+    });
+    $('#prevBtn').addEventListener('click', () => {
+      if(queueIndex > 0){ queueIndex--; playQueueIndex(queueIndex, true); }
+    });
+    $('#nextBtn').addEventListener('click', () => {
+      if(queueIndex < queue.length - 1){ queueIndex++; playQueueIndex(queueIndex, true); }
+    });
+    $('#muteBtn').addEventListener('click', () => {
+      if(!ytPlayer) return;
+      if(ytPlayer.isMuted()) ytPlayer.unMute(); else ytPlayer.mute();
+    });
+
+    // 검색창 → YouTube 재생
+    $('#searchInput').addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        const q = e.currentTarget.value.trim();
+        if(!q) return;
+        queue = [{ title: q, artists: '', query: q + ' audio', image: '' }];
+        queueIndex = 0;
+        playQueueIndex(0, true);
+        setHint('YouTube 검색 결과를 재생합니다.');
+      }
+    });
+
+    // 시크바/타이머
+    $('#seek').addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      if(ytPlayer){
+        const d = ytPlayer.getDuration() || 0;
+        ytPlayer.seekTo(d * (v/100), true);
+      }
+    });
+
+    // 인증 이벤트 바인딩
+    $('#loginBtn').addEventListener('click', login);
+    $('#logoutBtn').addEventListener('click', logout);
+    $('#firebaseLoginBtn').addEventListener('click', () => {
+      window.location.hash = 'auth';
+      showLoginModal();
+    });
+    document.getElementById('firebaseLogoutBtn').addEventListener('click', firebaseLogout);
+  }
+  
   // 시크바/타이머
   function setupProgressTimer(){
     if(progressTimer) clearInterval(progressTimer);
@@ -773,36 +807,34 @@
       $('#seek').value = String(Math.floor(ratio));
     }, 500);
   }
-  $('#seek').addEventListener('input', (e) => {
-    const v = Number(e.target.value);
-    if(ytPlayer){
-      const d = ytPlayer.getDuration() || 0;
-      ytPlayer.seekTo(d * (v/100), true);
-    }
-  });
 
-  // 이벤트 바인딩
-  $('#loginBtn').addEventListener('click', login);
-  $('#logoutBtn').addEventListener('click', logout);
+  // -------------------------
+  // 🚀 애플리케이션 초기화 (TypeError 수정) 🚀
+  // -------------------------
 
-  // Firebase 이벤트 바인딩
-  $('#firebaseLoginBtn').addEventListener('click', () => {
-    window.location.hash = 'auth';
-    showLoginModal();
-  });
-  document.getElementById('firebaseLogoutBtn').addEventListener('click', firebaseLogout);
-  
-  // URL 해시 변경 시 모달 감지
-  window.addEventListener('hashchange', () => {
-    if (window.location.hash === '#auth') {
-        showLoginModal();
-    }
-  });
+  async function initApp() {
+      // 1. Firebase 초기화 및 자동 로그인 시도
+      await initializeFirebase(); 
 
-  // 초기 실행
-  parseHashParams();
-  setTabs('playlists');
-  checkHashAndShowModal(); // 초기 로드 시 #auth 해시 확인
+      // 2. 탭 및 플레이어 컨트롤 설정 (DOM 준비 완료 후)
+      setupTabListeners();
+      setupPlayerControls();
+
+      // 3. URL 해시 변경 시 모달 감지
+      window.addEventListener('hashchange', () => {
+        if (window.location.hash === '#auth') {
+            showLoginModal();
+        }
+      });
+
+      // 4. 초기 상태 설정
+      parseHashParams();
+      setTabs('playlists');
+      checkHashAndShowModal(); // 초기 로드 시 #auth 해시 확인
+  }
+
+  // DOM 로드 완료 후 initApp 실행
+  window.onload = initApp;
 
 </script>
 </body>
