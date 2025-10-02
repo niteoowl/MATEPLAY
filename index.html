@@ -279,6 +279,7 @@
   // 🔑 Spotify PKCE 인증 설정 🔑
   // -------------------------
   const SPOTIFY_CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f'; 
+  // Spotify 설정에서 이 URL을 콜백 URI로 등록해야 합니다. (empty_canvas.html이 실행되는 경로)
   const SPOTIFY_REDIRECT_URI = 'https://play.nmate.kr/callback'; 
   const SPOTIFY_SCOPES = [
     'user-read-email',
@@ -301,7 +302,7 @@
   let progressTimer = null;
 
   // -------------------------
-  // 🔐 PKCE 유틸리티 함수 (생략: 기존 코드와 동일) 🔐
+  // 🔐 PKCE 유틸리티 함수 🔐
   // -------------------------
 
   function generateRandomString(length) {
@@ -330,6 +331,25 @@
     const hashed = await sha256(v);
     return base64urlencode(hashed);
   }
+
+  // -------------------------
+  // 🛠️ 공통 로드 함수 (추가됨) 🛠️
+  // -------------------------
+
+  /**
+   * Spotify 토큰과 Firebase 사용자 인증이 모두 완료되었는지 확인하고
+   * 완료되었다면 플레이리스트를 로드합니다.
+   * 이 함수는 두 인증 상태 중 하나가 변경될 때마다 호출됩니다.
+   */
+  function checkAndLoadData() {
+    if (currentFirebaseUser && accessToken) {
+        setTabs('playlists');
+        loadPlaylists(); // 데이터 로드 시작
+        return true;
+    }
+    return false;
+  }
+
 
   // -------------------------
   // 🎵 Firebase Auth Integration 🎵
@@ -372,10 +392,8 @@
         onAuthStateChanged(auth, (user) => {
             currentFirebaseUser = user;
             updateFirebaseAuthUI(user);
-            // Firebase 로그인 상태가 확인되면 (초기화 후) Spotify 데이터 로드를 시도
-            if (user && accessToken) {
-                 loadPlaylists();
-            }
+            // Firebase 로그인 상태가 확인되면 (초기화 후) Spotify 토큰 여부를 확인하고 데이터 로드를 시도합니다.
+            checkAndLoadData();
         });
 
     } catch(e) {
@@ -443,7 +461,7 @@
     setError(''); 
     
     const codeVerifier = generateRandomString(128);
-    // [수정] localStorage 대신 sessionStorage 사용으로 변경
+    // [유지] sessionStorage 사용
     sessionStorage.setItem('spotify_code_verifier', codeVerifier); 
     
     const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -460,70 +478,45 @@
   }
 
   // -------------------------
-  // 🔄 Spotify PKCE Callback (Step 2: Code to Token 교환) 🔄
+  // 🔄 Spotify PKCE Callback (Step 2: Token 수신 및 처리) 🔄
   // -------------------------
   async function handleSpotifyCallback(){
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const error = params.get('error'); 
+    // ⭐ URL Fragment (#)와 Query String (?) 모두에서 토큰 정보를 찾습니다.
+    // empty_canvas.html에서 Fragment를 사용하여 리디렉션하기 때문에 중요합니다.
+    const urlParts = new URLSearchParams(window.location.hash.substring(1));
+    const code = new URLSearchParams(window.location.search).get('code'); // 이전 방식 (사용 안함)
+    const token = urlParts.get('access_token');
+    const expiry = urlParts.get('expires_in');
     
-    if(error) {
+    // 이전 콜백 코드 (Spotify -> empty_canvas.html)가 남아있을 경우 제거
+    if(code) {
+        // 이 코드가 존재한다는 것은 empty_canvas.html이 아닌 main 앱으로 직접 돌아왔다는 의미
+        // 이 상황은 비정상적이므로 로그아웃 상태로 돌아갑니다.
         window.history.replaceState({}, document.title, window.location.pathname);
-        setError(`Spotify 로그인 중 오류 발생: ${error}`);
         return false;
     }
     
-    // [수정] localStorage 대신 sessionStorage에서 읽어오도록 변경
-    const verifier = sessionStorage.getItem('spotify_code_verifier');
-    
-    if (code && !verifier) {
+    // 1. Fragment에 토큰이 있는지 확인 (empty_canvas.html의 성공적인 리디렉션 결과)
+    if (token) {
+        accessToken = token;
+        expiresAt = Date.now() + (parseInt(expiry, 10) * 1000); 
+        
+        // URL Fragment 정리
         window.history.replaceState({}, document.title, window.location.pathname);
-        setError('❌ 인증 코드는 받았으나, PKCE 보안 검증 키를 찾을 수 없습니다. 로그인 과정을 다시 시작해 주세요.');
-        return false;
+        
+        $('#loginBtn').classList.add('hidden');
+        $('#logoutBtn').classList.remove('hidden');
+        
+        // Spotify 토큰을 성공적으로 받은 후, 데이터 로드를 시도합니다.
+        // Firebase 인증 상태를 확인하고 로드를 트리거합니다.
+        checkAndLoadData();
+        
+        setHint('✅ Spotify 인증 성공! Firebase 사용자 인증이 완료되면 플레이리스트를 불러옵니다.');
+        return true;
     }
 
-    if(!code || !verifier) return false; 
-
-    // [수정] localStorage 대신 sessionStorage에서 삭제
-    sessionStorage.removeItem('spotify_code_verifier');
-    window.history.replaceState({}, document.title, window.location.pathname); 
-
-    try {
-      const res = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: SPOTIFY_CLIENT_ID,
-          grant_type: 'authorization_code',
-          code: code,
-          redirect_uri: SPOTIFY_REDIRECT_URI,
-          code_verifier: verifier, 
-        })
-      });
-
-      if(!res.ok) {
-          const errText = await res.text().catch(()=> '');
-          throw new Error(`[${res.status}] ${errText.substring(0, 100)}...`);
-      }
-
-      const data = await res.json();
-      accessToken = data.access_token;
-      expiresAt = Date.now() + (data.expires_in * 1000); 
-      
-      $('#loginBtn').classList.add('hidden');
-      $('#logoutBtn').classList.remove('hidden');
-      
-      // Spotify 토큰을 성공적으로 받은 후 데이터 로드 시도
-      if (currentFirebaseUser) {
-        loadPlaylists();
-      }
-      setHint('✅ Spotify 인증 성공! Firebase 사용자 인증이 완료되면 플레이리스트를 불러옵니다.');
-      return true;
-
-    } catch(e) {
-      setError('Spotify 인증 코드 교환 실패: ' + e.message);
-      return false;
-    }
+    // 2. Fragment에 토큰이 없으면 로그인 버튼 표시
+    return false;
   }
   
   function logout(){
@@ -864,14 +857,11 @@
       setupTabListeners();
       setupPlayerControls();
 
-      // 3. Spotify 콜백 처리 시도 (토큰 교환)
+      // 3. Spotify 콜백 처리 시도 (토큰 수신)
       await handleSpotifyCallback();
       
-      // 4. 초기 데이터 로드 (Firebase, Spotify 모두 인증된 경우)
-      if (currentFirebaseUser && accessToken) {
-        setTabs('playlists');
-        loadPlaylists();
-      }
+      // 4. 초기 데이터 로드 최종 확인 (Firebase, Spotify 모두 인증된 경우)
+      checkAndLoadData();
   }
 
   window.onload = initApp;
