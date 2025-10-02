@@ -34,7 +34,7 @@
       border:1px solid rgba(255,255,255,0.06);
     }
     
-    /* === 개선된 인증 영역 CSS === */
+    /* === 인증 영역 CSS === */
     .auth-area {
       display: flex;
       align-items: center;
@@ -97,7 +97,7 @@
         color: white;
         box-shadow: none; 
     }
-    /* === 개선된 인증 영역 CSS 끝 === */
+    /* === 인증 영역 CSS 끝 === */
 
 
     /* 레이아웃 */
@@ -270,17 +270,18 @@
 <!-- YouTube IFrame API & Application Logic -->
 <script type="module">
   // Firebase SDKs Import
-  // signInAnonymously를 제거했습니다.
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-  // 환경 설정: 반드시 값 교체
-  const SPOTIFY_CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f'; // 교체된 Client ID
-  const SPOTIFY_REDIRECT_URI = 'https://play.nmate.kr/callback'; // 교체된 콜백 URI
+  // -------------------------
+  // 🔑 Spotify PKCE 인증 설정 (Client ID 및 Redirect URI는 고객님 정보 그대로 사용) 🔑
+  // -------------------------
+  const SPOTIFY_CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f'; // 고객님 Client ID
+  const SPOTIFY_REDIRECT_URI = 'https://play.nmate.kr/callback'; // 고객님 Redirect URI
   const SPOTIFY_SCOPES = [
     'user-read-email',
     'playlist-read-private',
-    'user-library-read' // 좋아요한 트랙
+    'user-library-read'
   ].join(' ');
   const YT_API_KEY = 'AIzaSyAIhw6pfhduLDZRdv5FqzddSBqHjMQQzEE'; // 제공된 키 사용
 
@@ -296,6 +297,41 @@
   let ytPlayer = null;
   let ytReady = false;
   let progressTimer = null;
+
+  // -------------------------
+  // 🔐 PKCE 유틸리티 함수 (code_verifier 및 code_challenge 생성) 🔐
+  // -------------------------
+
+  // 1. 임의의 문자열 (Code Verifier) 생성
+  function generateRandomString(length) {
+    let text = '';
+    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < length; i++) {
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+  }
+
+  // 2. Code Verifier를 SHA-256으로 해싱
+  async function sha256(plain) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(plain);
+    return window.crypto.subtle.digest('SHA-256', data);
+  }
+
+  // 3. 해싱된 결과를 Base64URL로 인코딩 (Code Challenge)
+  function base64urlencode(a) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+  }
+
+  // 4. Code Challenge 최종 생성
+  async function generateCodeChallenge(v) {
+    const hashed = await sha256(v);
+    return base64urlencode(hashed);
+  }
 
   // -------------------------
   // 🎵 Firebase Auth Integration 🎵
@@ -315,29 +351,28 @@
   let firebaseApp;
   let auth;
   let currentFirebaseUser = null;
-  const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_token : null; // __initial_auth_token 변수 사용
+  // 초기 인증 토큰 변수가 정의되었을 경우에만 사용 (타입 안정성 강화)
+  const initialAuthToken = typeof __initial_auth_token === 'string' ? __initial_auth_token : null; 
 
   async function initializeFirebase() {
     try {
         firebaseApp = initializeApp(FIREBASE_CONFIG);
         auth = getAuth(firebaseApp);
 
-        // 1. Custom Token Sign In 시도 (익명 로그인 대체 로직 제거)
+        // Custom Token Sign In 시도
         if (initialAuthToken) {
             try {
-                // 토큰이 있는 경우에만 signInWithCustomToken 시도
                 await signInWithCustomToken(auth, initialAuthToken);
                 console.log("Custom token sign-in successful.");
             } catch (error) {
-                console.error("Custom token sign-in failed: No fallback to Anonymous Sign-In.", error);
-                // 토큰 불일치 시 오류 메시지만 표시하고 인증 실패 상태로 유지
+                console.error("Custom token sign-in failed:", error);
                 setError("자동 로그인에 실패했습니다. (유효하지 않은 토큰)");
             }
         } else {
-             console.log("No initial custom token provided. User will remain unauthenticated until manual login.");
+             console.log("No initial custom token provided.");
         }
         
-        // 2. Auth State Listener 설정
+        // Auth State Listener 설정
         onAuthStateChanged(auth, (user) => {
             currentFirebaseUser = user;
             updateFirebaseAuthUI(user);
@@ -410,8 +445,8 @@
     const closeModal = () => {
         const overlay = document.getElementById('loginModalOverlay');
         if (overlay) document.body.removeChild(overlay);
-        // 모달 닫을 때 URL 해시 제거
-        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        // 모달 닫을 때 URL 해시/검색 파라미터 제거
+        window.history.replaceState({}, document.title, window.location.pathname);
         setError('');
     };
 
@@ -454,39 +489,92 @@
     box.classList.toggle('hidden', !msg);
   }
 
-  // OAuth Implicit Flow 파서
-  function parseHashParams(){
-    const h = window.location.hash.replace(/^#/, '');
-    const params = new URLSearchParams(h);
-    const token = params.get('access_token');
-    const type = params.get('token_type');
-    const expiresIn = params.get('expires_in');
-    if(token && type === 'Bearer'){
-      accessToken = token;
-      expiresAt = Date.now() + (Number(expiresIn||3600)*1000);
-      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
-      $('#loginBtn').classList.add('hidden');
-      $('#logoutBtn').classList.remove('hidden');
-      loadPlaylists();
-    }
-  }
+  // -------------------------
+  // 🔄 Spotify PKCE Login (Step 1) 🔄
+  // -------------------------
+  async function login(){
+    const codeVerifier = generateRandomString(128);
+    // Code Verifier는 Code Challenge를 생성하고 Token 교환 시 사용하기 위해 저장
+    localStorage.setItem('spotify_code_verifier', codeVerifier); 
+    
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-  function login(){
     const authUrl = new URL('https://accounts.spotify.com/authorize');
     authUrl.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
-    authUrl.searchParams.set('response_type', 'token');
+    authUrl.searchParams.set('response_type', 'code'); // PKCE의 핵심: code 요청
     authUrl.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
     authUrl.searchParams.set('scope', SPOTIFY_SCOPES);
+    authUrl.searchParams.set('code_challenge_method', 'S256'); // PKCE 방식 명시
+    authUrl.searchParams.set('code_challenge', codeChallenge); // Code Challenge 전송
     authUrl.searchParams.set('show_dialog', 'true');
     window.location.href = authUrl.toString();
   }
 
+  // -------------------------
+  // 🔄 Spotify PKCE Callback (Step 2: Code to Token 교환) 🔄
+  // -------------------------
+  async function handleSpotifyCallback(){
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error'); // 에러 처리
+    
+    if(error) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setError(`Spotify 로그인 중 오류 발생: ${error}`);
+        return false;
+    }
+    
+    const verifier = localStorage.getItem('spotify_code_verifier');
+    
+    // code가 없거나 verifier가 없으면 Spotify 콜백이 아님
+    if(!code || !verifier) return false; 
+
+    // Code와 Verifier를 사용했으므로 바로 제거
+    localStorage.removeItem('spotify_code_verifier');
+    window.history.replaceState({}, document.title, window.location.pathname); // URL에서 'code=' 제거
+
+    try {
+      // POST 요청을 통해 Access Token 교환
+      const res = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: SPOTIFY_CLIENT_ID,
+          grant_type: 'authorization_code',
+          code: code,
+          redirect_uri: SPOTIFY_REDIRECT_URI,
+          code_verifier: verifier, // PKCE 검증 키 전송
+        })
+      });
+
+      if(!res.ok) {
+          const errText = await res.text();
+          throw new Error(`[${res.status}] ${errText.substring(0, 100)}...`);
+      }
+
+      const data = await res.json();
+      accessToken = data.access_token;
+      expiresAt = Date.now() + (data.expires_in * 1000); // 만료 시간 설정
+      
+      // UI 업데이트 및 데이터 로드
+      $('#loginBtn').classList.add('hidden');
+      $('#logoutBtn').classList.remove('hidden');
+      loadPlaylists();
+      return true;
+
+    } catch(e) {
+      setError('Spotify 인증 코드 교환 실패: ' + e.message);
+      return false;
+    }
+  }
+  
   function logout(){
     accessToken = null; expiresAt = 0;
     $('#loginBtn').classList.remove('hidden');
     $('#logoutBtn').classList.add('hidden');
     $('#list').innerHTML = '';
     setHint('로그아웃되었습니다. 다시 로그인해 주세요.');
+    // PKCE는 별도의 로그아웃 엔드포인트가 없으므로 로컬 토큰만 제거합니다.
   }
 
   async function spotify(endpoint, params){
@@ -809,7 +897,7 @@
   }
 
   // -------------------------
-  // 🚀 애플리케이션 초기화 (TypeError 수정) 🚀
+  // 🚀 애플리케이션 초기화 🚀
   // -------------------------
 
   async function initApp() {
@@ -820,17 +908,20 @@
       setupTabListeners();
       setupPlayerControls();
 
-      // 3. URL 해시 변경 시 모달 감지
-      window.addEventListener('hashchange', () => {
-        if (window.location.hash === '#auth') {
-            showLoginModal();
-        }
-      });
+      // 3. Spotify 콜백 처리 시도 (PKCE Step 2)
+      const isCallback = await handleSpotifyCallback();
 
-      // 4. 초기 상태 설정
-      parseHashParams();
-      setTabs('playlists');
-      checkHashAndShowModal(); // 초기 로드 시 #auth 해시 확인
+      // 4. 콜백 처리가 아니었고, URL에 #auth 해시가 있으면 모달 표시
+      if (!isCallback) {
+          checkHashAndShowModal();
+      }
+
+      // 5. 초기 탭 데이터 로드 (PKCE 성공 시 콜백 핸들러 내부에서 이미 호출됨)
+      if (accessToken) {
+          setTabs('playlists');
+      }
+      
+      // 6. 만약 PKCE 교환은 성공했지만 토큰이 아직 유효하지 않으면 로그인 버튼을 보여주지 않고 재시도하지 않음
   }
 
   // DOM 로드 완료 후 initApp 실행
