@@ -100,7 +100,7 @@
         <button class="btn" id="prevBtn">⏮</button>
         <button class="btn primary" id="playPauseBtn">▶</button>
         <button class="btn" id="nextBtn">⏭</button>
-        <button class="btn" id="muteBtn">🔇</button>
+        <button class="btn" id="muteBtn">🔊</button>
       </div>
     </div>
   </div>
@@ -135,7 +135,35 @@
   function setError(msg){ const box=$('#errorBox'); box.textContent=msg||''; box.classList.toggle('hidden', !msg); }
   function setHint(msg){ const box=$('#hintBox'); box.textContent=msg||''; box.classList.toggle('hidden', !msg); }
 
+  // --- PKCE Crypto Utilities ---
+  function generateRandomString(length) {
+      let text = '';
+      const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      for (let i = 0; i < length; i++) {
+          text += possible.charAt(Math.floor(Math.random() * possible.length));
+      }
+      return text;
+  }
+  
+  async function sha256(plain) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(plain);
+      return window.crypto.subtle.digest('SHA-256', data);
+  }
+  
+  function base64urlencode(a) {
+      return btoa(String.fromCharCode.apply(null, new Uint8Array(a)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  
+  async function generateCodeChallenge(v) {
+      const hashed = await sha256(v);
+      return base64urlencode(hashed);
+  }
+  // -----------------------------
+
   function parseHashParams(){
+    // PKCE 플로우는 콜백 페이지에서 토큰을 교환한 후, 최종적으로 토큰을 hash 파라미터로 여기에 전달합니다.
     const h = window.location.hash.replace(/^#/, '');
     const params = new URLSearchParams(h);
     const token = params.get('access_token');
@@ -157,13 +185,24 @@
     }
   }
 
-  function login(){
+  async function login(){
+    // 1. PKCE: code_verifier 생성 및 저장
+    const codeVerifier = generateRandomString(128);
+    sessionStorage.setItem('spotify_code_verifier', codeVerifier);
+
+    // 2. PKCE: code_challenge 생성
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+    // 3. 인증 요청 URL 생성
     const authUrl = new URL('https://accounts.spotify.com/authorize');
     authUrl.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
-    authUrl.searchParams.set('response_type', 'token'); // Implicit Flow
+    authUrl.searchParams.set('response_type', 'code'); // PKCE를 위해 'code'로 변경
     authUrl.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
     authUrl.searchParams.set('scope', SPOTIFY_SCOPES);
     authUrl.searchParams.set('show_dialog', 'true');
+    authUrl.searchParams.set('code_challenge_method', 'S256'); // PKCE 필수
+    authUrl.searchParams.set('code_challenge', codeChallenge); // PKCE 필수
+
     window.location.href = authUrl.toString();
   }
 
@@ -354,7 +393,18 @@
   });
   $('#prevBtn').addEventListener('click', () => { if(queueIndex>0){ queueIndex--; playQueueIndex(queueIndex, true); }});
   $('#nextBtn').addEventListener('click', () => { if(queueIndex<queue.length-1){ queueIndex++; playQueueIndex(queueIndex, true); }});
-  $('#muteBtn').addEventListener('click', () => { if(!ytPlayer) return; if(ytPlayer.isMuted()) ytPlayer.unMute(); else ytPlayer.mute(); });
+  
+  // Mute 버튼 로직 수정: 아이콘을 현재 상태에 맞게 토글합니다.
+  $('#muteBtn').addEventListener('click', () => { 
+    if(!ytPlayer) return; 
+    if(ytPlayer.isMuted()) {
+      ytPlayer.unMute(); 
+      $('#muteBtn').textContent = '🔊'; // 음소거 해제 시 스피커 아이콘
+    } else {
+      ytPlayer.mute(); 
+      $('#muteBtn').textContent = '🔇'; // 음소거 시 뮤트 아이콘
+    }
+  });
 
   $('#searchInput').addEventListener('keydown', (e) => {
     if(e.key==='Enter'){
