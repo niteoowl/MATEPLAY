@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>MatePlay — 로그인/회원가입</title>
+  <title>MatePlay — 로그인 및 회원가입</title>
   <style>
     :root{
       --bg:#0f1115; --panel:#151823; --panel-2:#1b2030;
@@ -11,22 +11,22 @@
       --shadow:0 12px 28px rgba(0,0,0,.38);
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
+    html,body{height:100%; overflow:hidden;}
     body{
       margin:0; 
-      background:var(--bg); /* 배경 제거 (단색으로 변경) */
+      background:var(--bg); 
       color:var(--text); font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Apple SD Gothic Neo, Noto Sans KR, sans-serif;
       display:grid; place-items:center; 
-      padding:0; /* body padding 제거 */
+      padding:0; 
     }
     .card{
       width:min(460px, 96vw); 
-      background:transparent; /* 박스 배경 제거 */
-      border:none; /* 테두리 제거 */
-      border-radius:0; /* 둥근 모서리 제거 */
-      box-shadow:none; /* 그림자 제거 */
+      background:var(--panel); 
+      border-radius:12px; 
+      box-shadow:var(--shadow); 
       padding:18px; 
     }
+    /* Form Styles */
     .appbar{
       display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;
       padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.06);
@@ -60,41 +60,33 @@
       flex:1; border:none; outline:none; background:transparent; color:var(--text); font-size:14px;
     }
     .input:focus-within{ border-color: var(--focus); box-shadow:0 0 0 3px #2dd4bf22 }
-    .help{ font-size:12px; color:#9fb2d6 }
     .err{ font-size:12px; color:var(--danger) }
     .row{ display:flex; align-items:center; justify-content:flex-start; gap:10px }
     .check{ display:flex; align-items:center; gap:8px; color:#b9c6e4; font-size:13px }
     .btn{
       width:100%; padding:12px 14px; border:none; border-radius:12px; cursor:pointer;
       background:var(--accent); color:#0a0d12; font-weight:900; box-shadow:var(--shadow);
-      /* 스피너 위치 조정을 위한 설정 */
       min-height: 44px; 
       position: relative; 
       display: flex; 
       align-items: center; 
-      justify-content: center; /* 텍스트를 중앙에 배치 */
-    }
-    .btn.secondary{
-      background:#232a3d; color:#e6ecff; border:1px solid rgba(255,255,255,0.06); box-shadow:none;
+      justify-content: center; 
     }
     .btn.google{
       display:flex; align-items:center; justify-content:center; gap:8px;
       background:#ffffff; color:#111827; font-weight:800;
-      min-height: 44px; /* Google 버튼도 min-height 고정 */
+      min-height: 44px; 
     }
     .sep{
       display:flex; align-items:center; gap:8px; color:#a7b5d6; font-size:12px; margin:2px 0;
     }
     .sep::before, .sep::after{ content:''; flex:1; height:1px; background:rgba(255,255,255,0.1) }
     .hint{ color:#9fb2d6; font-size:12px; margin-top:4px }
-    /* 푸터 삭제 */
     .spinner{
       width:18px; height:18px; border:3px solid rgba(255,255,255,.15); border-top-color:#fff; border-radius:50%;
       animation:spin 1s linear infinite;
-      
-      /* 스피너 위치 조정 */
       position: absolute; 
-      left: 14px; /* 버튼 좌측 패딩(14px)에 맞춰 배치 */
+      left: 14px; 
       top: 50%;
       transform: translateY(-50%);
     }
@@ -118,10 +110,9 @@
         signInWithEmailAndPassword, 
         signOut, 
         onAuthStateChanged,
-        GoogleAuthProvider, // Google 인증 제공자
-        signInWithPopup // 팝업 인증
+        GoogleAuthProvider, 
+        signInWithPopup
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
     window.firebaseModules = { 
         initializeApp, 
         getAuth, 
@@ -135,27 +126,21 @@
   </script>
 </head>
 <body>
-  <div class="card">
+  
+  <!-- 1. 인증 화면 -->
+  <div id="authView" class="card">
     <div class="appbar">
       <div class="brand">
-        <!-- MatePlay 텍스트와 🎧 이모지를 로고 이미지로 교체 -->
         <img src="https://i.postimg.cc/430bTY3C/image.png" alt="MatePlay Logo" style="height: 30px; object-fit: contain;"/>
         <div class="badge">인증</div>
       </div>
-      <a href="#" style="color:#a7b5d6; font-size:12px; text-decoration:none" onclick="toast('홈으로 이동하는 기능을 여기에 추가해야 합니다.'); return false;">홈으로</a>
+      <a href="/" style="color:#a7b5d6; font-size:12px; text-decoration:none">홈으로 이동</a>
     </div>
 
     <!-- 로그인/회원가입 탭 -->
     <div class="tabs" id="authTabs">
       <div id="tabLogin" class="tab active">로그인</div>
       <div id="tabSignup" class="tab">회원가입</div>
-    </div>
-
-    <!-- 사용자 상태 표시 (로그인 성공 시) -->
-    <div id="authState" style="display:none; padding:18px; text-align:center; color:#cfd7f5; background:var(--panel-2); border-radius:12px; margin-top:12px;">
-        <div id="authEmail" style="font-size:16px; font-weight:700; margin-bottom:4px;"></div>
-        <div id="authUID" style="font-size:12px; color:var(--muted); margin-bottom:12px;"></div>
-        <button id="btnLogout" class="btn secondary" style="width:auto; padding:10px 20px;">로그아웃</button>
     </div>
 
     <!-- 로그인 폼 -->
@@ -173,7 +158,6 @@
       <div class="row">
         <label class="check"><input id="keepLogin" type="checkbox" /> 로그인 상태 유지</label>
       </div>
-      <!-- flex/justify 클래스 제거 및 custom CSS 적용 -->
       <button id="btnLogin" type="submit" class="btn">
         <span>이메일로 로그인</span><div id="loginSpinner" class="spinner hidden"></div>
       </button>
@@ -204,7 +188,6 @@
         <div id="signupPassword2Err" class="err" style="display:none"></div>
       </div>
       <label class="check"><input id="agreeTos" type="checkbox" /> 이용약관 및 개인정보처리방침에 동의합니다.</label>
-      <!-- flex/justify 클래스 제거 및 custom CSS 적용 -->
       <button id="btnSignup" type="submit" class="btn">
         <span>이메일로 회원가입</span><div id="signupSpinner" class="spinner hidden"></div>
       </button>
@@ -216,7 +199,6 @@
       </button>
       <div class="hint">가입 후 프로필은 언제든지 수정하실 수 있습니다.</div>
     </form>
-
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -226,9 +208,10 @@
   // 1. GLOBAL VARIABLES & UTILS
   // =========================================================================
   const $ = s => document.querySelector(s);
-  const show = el => el.style.display = '';
-  const hide = el => el.style.display = 'none';
   
+  // 필수 전역 변수 설정 (Firebase 경로 설정에 사용)
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'mateplay-auth-v1';
+
   // 사용자 제공 Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyC2iRkFZUYZsVIbGzXcCLY1t4eBcfzvwzg",
@@ -258,25 +241,22 @@
     el.style.display = msg ? 'block':'none'; 
   }
 
-  // 버튼 로딩 상태 토글 (스피너 높이 문제 해결을 위해 버튼 텍스트를 <span>으로 래핑함)
+  // 버튼 로딩 상태 토글
   function toggleLoading(buttonId, spinnerId, isLoading, originalText) {
       const btn = $(buttonId);
       const spinner = $(spinnerId);
       if (btn) {
           btn.disabled = isLoading;
-          // .btn 내부의 <span>을 찾아 텍스트를 업데이트합니다.
           const textSpan = btn.querySelector('span');
           if (textSpan) {
               textSpan.textContent = isLoading ? '처리 중...' : originalText;
           } else {
-             // Google 버튼은 텍스트를 변경하지 않습니다.
              if (buttonId !== '#btnGoogleLogin' && buttonId !== '#btnGoogleSignup') {
                 btn.textContent = isLoading ? '처리 중...' : originalText; 
              }
           }
       }
       if (spinner) {
-          // 로딩 중일 때만 스피너를 보여줍니다.
           spinner.classList.toggle('hidden', !isLoading);
       }
   }
@@ -290,73 +270,35 @@
 
   async function initializeFirebase() {
     if (!window.firebaseModules || Object.keys(firebaseConfig).length === 0) {
-      toast('Firebase 설정이 없어 인증 기능을 사용할 수 없습니다.', 'err');
+      toast('Firebase 설정이 없어 인증 기능을 사용할 수 없습니다.');
       return;
     }
     
-    const { initializeApp, getAuth, onAuthStateChanged, signOut } = window.firebaseModules;
+    const { initializeApp, getAuth, onAuthStateChanged } = window.firebaseModules;
     try {
       const app = initializeApp(firebaseConfig);
       auth = getAuth(app);
     } catch (error) {
       console.error("Firebase Initialization Failed:", error);
-      toast('Firebase 초기화에 실패했습니다.', 'err');
+      toast('Firebase 초기화에 실패했습니다.');
       return;
     }
 
-    // 인증 상태 변화 리스너
+    // 인증 상태 변화 리스너: 로그인 상태를 감지하고 홈으로 리디렉션합니다.
     onAuthStateChanged(auth, (user) => {
-      handleAuthStateChange(user);
-    });
-
-    // 로그아웃 버튼 이벤트 리스너 추가
-    $('#btnLogout').addEventListener('click', async () => {
-        try {
-            await signOut(auth);
-            toast('로그아웃되었습니다.');
-        } catch (error) {
-            console.error("Logout Error:", error);
-            toast('로그아웃 중 오류가 발생했습니다.');
-        }
+      if (user) {
+        // 이미 로그인된 상태이거나, 지금 로그인에 성공했다면 메인 앱으로 리디렉션
+        toast(`로그인 성공! MatePlay 홈으로 이동합니다.`);
+        window.location.href = 'mateplay_home.html';
+      }
+      // 로그아웃 상태면 이 페이지에 머무르며 인증 폼을 보여줍니다.
     });
   }
 
-  // 인증 상태에 따른 UI 업데이트
-  function handleAuthStateChange(user) {
-    const authStateEl = $('#authState');
-    // authFooter가 삭제되었으므로 배열에서 제거
-    const authForms = [$('#authTabs'), $('#formLogin'), $('#formSignup')]; 
-
-    if (user) {
-      // 로그인됨 (익명 사용자 제외)
-      authForms.forEach(hide);
-      show(authStateEl);
-      $('#authEmail').textContent = user.email || (user.providerData?.[0]?.email || "소셜 계정");
-      $('#authUID').textContent = `UID: ${user.uid}`;
-      toast(`환영합니다, ${user.email || 'MatePlay 사용자'}님!`);
-      $('.badge').textContent = '로그인됨';
-    } else {
-      // 로그아웃됨
-      authForms.forEach(show);
-      hide(authStateEl);
-      // 로그인 폼으로 기본 설정
-      const tabLogin = $('#tabLogin'), tabSignup = $('#tabSignup');
-      const formLogin = $('#formLogin'), formSignup = $('#formSignup');
-      
-      tabLogin.classList.add('active'); 
-      tabSignup.classList.remove('active');
-      show(formLogin); 
-      hide(formSignup);
-      
-      $('.badge').textContent = '인증';
-    }
-  }
-
-
   // =========================================================================
-  // 3. HANDLERS (Email/Password)
+  // 3. HANDLERS (Email/Password & Google Auth)
   // =========================================================================
-
+  
   // 이메일 로그인 제출
   $('#formLogin').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -373,7 +315,7 @@
     
     try{
       await signInWithEmailAndPassword(auth, email, pw);
-      // onAuthStateChanged에서 성공 메시지 및 UI 업데이트 처리
+      // onAuthStateChanged에서 리디렉션 처리
     }catch(error){
       let msg = '로그인에 실패했습니다. 이메일 또는 비밀번호를 확인해 주세요.';
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -408,7 +350,7 @@
 
     try{
       await createUserWithEmailAndPassword(auth, email, pw);
-      // onAuthStateChanged에서 성공 메시지 및 UI 업데이트 처리
+      // onAuthStateChanged에서 리디렉션 처리
     }catch(error){
       let msg = '회원가입에 실패했습니다.';
       if (error.code === 'auth/email-already-in-use') {
@@ -423,10 +365,7 @@
     }
   });
 
-  // =========================================================================
-  // 4. HANDLERS (Google Login)
-  // =========================================================================
-
+  // Google 인증
   async function googleAuth(){
       const { GoogleAuthProvider, signInWithPopup } = window.firebaseModules;
       const provider = new GoogleAuthProvider();
@@ -440,7 +379,7 @@
           btnSignup.disabled = true;
 
           await signInWithPopup(auth, provider);
-          // onAuthStateChanged에서 성공 처리
+          // onAuthStateChanged에서 리디렉션 처리
           
       } catch (error) {
           let msg = 'Google 인증에 실패했습니다.';
@@ -460,8 +399,9 @@
       }
   }
 
+
   // =========================================================================
-  // 5. EVENT BINDING & INIT
+  // 4. EVENT BINDING & INIT
   // =========================================================================
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -473,17 +413,16 @@
 
     tabLogin.addEventListener('click', () => {
       tabLogin.classList.add('active'); tabSignup.classList.remove('active');
-      show(formLogin); hide(formSignup);
+      formLogin.style.display = ''; formSignup.style.display = 'none';
     });
     tabSignup.addEventListener('click', () => {
       tabSignup.classList.add('active'); tabLogin.classList.remove('active');
-      show(formSignup); hide(formLogin);
+      formSignup.style.display = ''; formLogin.style.display = 'none';
     });
 
     // Google 로그인/가입 이벤트
     $('#btnGoogleLogin').addEventListener('click', googleAuth);
     $('#btnGoogleSignup').addEventListener('click', googleAuth);
-
   });
 </script>
 </body>
