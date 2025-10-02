@@ -107,12 +107,13 @@
       display:grid; grid-template-rows:auto 1fr auto; height:100%;
     }
     .content{
-      display:grid; grid-template-rows:auto 1fr; gap:12px; padding:12px; height:calc(100vh - 160px);
+      display:grid; grid-template-rows:auto auto 1fr; gap:0px; padding:12px; height:calc(100vh - 160px);
     }
 
     /* 검색/탭 */
     .controls{
       display:flex; gap:10px; align-items:center; overflow:auto; padding:4px 2px;
+      margin-bottom:8px;
     }
     .pill{
       white-space:nowrap; padding:8px 12px; border-radius:999px; background:var(--panel);
@@ -134,8 +135,14 @@
     .grid{
       overflow:auto; padding-bottom:12px;
     }
+    /* === [개선] 현재 뷰 헤더 스타일 === */
+    #currentViewHeader{
+        font-weight:700; margin:6px 6px 10px; color:#dbe3ff; font-size:16px;
+        display:flex; align-items:center; padding:4px 0;
+    }
+    /* === [개선] 현재 뷰 헤더 스타일 끝 === */
     .section-title{
-      font-weight:700; margin:6px 6px 10px; color:#dbe3ff; font-size:14px;
+        font-weight:700; margin:6px 6px 10px; color:#dbe3ff; font-size:14px;
     }
     .card{
       display:flex; gap:12px; align-items:center; background:var(--panel);
@@ -163,9 +170,10 @@
     .save-btn{
       margin-left:auto; /* 오른쪽 끝으로 이동 */
       background:var(--panel-2); color:var(--accent);
-      width:32px; height:32px; border-radius:8px;
+      width:38px; height:38px; border-radius:10px; /* 버튼 크기를 크게 조정 */
       display:grid; place-items:center; flex-shrink: 0;
       transition: background 0.15s;
+      border:none; /* 버튼 테두리 제거 */
     }
     .save-btn:hover {
         background: rgba(30,215,96,0.1); /* hover 시 연한 녹색 배경 */
@@ -192,8 +200,11 @@
       appearance:none; border:none; outline:none; background:#232a3d; color:var(--text);
       border:1px solid rgba(255,255,255,0.06); width:38px; height:38px; border-radius:10px;
       display:grid; place-items:center; cursor:pointer;
+      transition: background 0.1s;
     }
-    .btn.primary{ background:var(--accent); color:#0a0d12; font-weight:800 }
+    .btn:hover{ background:#2e3549; }
+    .btn.primary{ background:var(--accent); color:#0a0d12; font-weight:800; border:none; }
+    .btn.primary:hover{ background:#18a34b; }
     .time{
       display:flex; align-items:center; gap:8px; color:#aeb6cc; font-size:11px; margin-top:6px;
     }
@@ -210,8 +221,44 @@
     .err{ color:var(--danger); font-size:12px; margin:8px 6px 0 }
     .hint{ color:#a7b0c6; font-size:12px; margin:6px }
     /* 스크롤 스타일 */
-    .grid::-webkit-scrollbar, .content::-webkit-scrollbar { width:8px; height:8px }
-    .grid::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb { background:#2a3246; border-radius:999px }
+    .grid::-webkit-scrollbar, .content::-webkit-scrollbar, .modal-list-container::-webkit-scrollbar { width:8px; height:8px }
+    .grid::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb, .modal-list-container::-webkit-scrollbar-thumb { background:#2a3246; border-radius:999px }
+
+    /* === [추가] 플레이리스트 선택 모달 스타일 === */
+    .modal-overlay {
+      position:fixed; top:0; left:0; right:0; bottom:0;
+      background:rgba(0,0,0,0.8); z-index:20;
+      display:flex; justify-content:center; align-items:center;
+      padding:20px;
+    }
+    .modal-content {
+      background:var(--panel); border-radius:18px; padding:20px;
+      width:100%; max-width:400px; max-height:80vh; overflow:hidden;
+      box-shadow:var(--shadow);
+      display:flex; flex-direction:column;
+    }
+    .modal-title { font-size:18px; font-weight:700; margin:0 0 4px; color:var(--text); }
+    .modal-subtitle { color:var(--accent); font-size:14px; margin:0 0 15px; font-weight:600;}
+    .modal-list-container {
+      overflow-y:auto; flex:1; margin-bottom:15px;
+      border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;
+    }
+    .modal-actions { text-align:right }
+    .modal-list-item {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px; border-radius:10px; cursor:pointer;
+      transition:background 0.1s; margin-bottom:4px;
+      border:1px solid transparent;
+    }
+    .modal-list-item:hover { background:var(--panel-2); border-color:#1ed76033; }
+    .modal-list-item .name { font-size:14px; font-weight:500; }
+    .modal-list-item .count { font-size:12px; color:var(--muted); }
+    .loading-spinner { /* Placeholder for a simple loading indicator */
+      margin:20px auto; width:30px; height:30px; border:4px solid rgba(255,255,255,0.2);
+      border-top:4px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+    /* === 플레이리스트 선택 모달 스타일 끝 === */
   </style>
 </head>
 <body>
@@ -220,7 +267,7 @@
 
   <div class="appbar">
     <div class="brand">
-      <!-- 로고 이미지로 대체: 🎧Music Hub Spotify · YouTube 텍스트 삭제 -->
+      <!-- 로고 이미지로 대체 -->
       <img src="https://i.postimg.cc/430bTY3C/image.png" alt="Music Hub Logo" style="height:30px; border-radius:6px;">
     </div>
     <!-- 인증 영역 (Spotify + Firebase) -->
@@ -232,7 +279,6 @@
       </div>
       <!-- Firebase Auth (개선된 칩 스타일) -->
       <div id="firebaseAuthControl" style="display:flex; align-items:center;">
-        <!-- 이 버튼이 클릭되면 실제 /auth.html로 리디렉션 됩니다. -->
         <button id="firebaseLoginBtn" class="login-btn">로그인</button> 
         <div id="userInfo" class="hidden">
           <span id="userEmail"></span>
@@ -250,13 +296,16 @@
         <div class="search">
             <!-- 검색 아이콘에 ID 추가 및 클릭 이벤트 바인딩 -->
             <svg id="searchIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <!-- 플레이리스트를 위해 Spotify 검색으로 텍스트 변경 -->
             <input type="text" id="searchInput" placeholder="Spotify에서 트랙 검색..." />
         </div>
     </div>
 
     <div id="errorBox" class="err hidden"></div>
     <div id="hintBox" class="hint">Spotify에서 가져온 항목을 누르면 YouTube에서 자동 검색해 재생합니다.</div>
+    
+    <!-- === [개선] 현재 뷰 헤더 (플레이리스트 상세 보기 등에 사용) === -->
+    <div id="currentViewHeader" class="section-title hidden"></div>
+    <!-- ========================================================= -->
 
     <div id="list" class="grid" role="list" data-current-view="playlists"></div>
   </div>
@@ -285,6 +334,21 @@
   </div>
 </div>
 
+<!-- === [추가] 플레이리스트 선택 모달 === -->
+<div id="playlistSelectionModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3 id="modalTitle" class="modal-title">플레이리스트에 추가</h3>
+    <p id="modalTrackName" class="modal-subtitle">트랙 이름</p>
+    <div id="playlistListContainer" class="modal-list-container">
+      <div class="loading-spinner"></div>
+    </div>
+    <div class="modal-actions">
+      <button id="modalCloseBtn" class="logout-btn">닫기</button>
+    </div>
+  </div>
+</div>
+<!-- ================================== -->
+
 <!-- YouTube IFrame API & Application Logic -->
 <script type="module">
   // Firebase SDKs Import
@@ -296,7 +360,7 @@
   // -------------------------
   const SPOTIFY_CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f'; 
   const SPOTIFY_REDIRECT_URI = 'https://play.nmate.kr/callback'; 
-  // 트랙 저장 기능(좋아요한 트랙에 추가)을 위해 'user-library-modify' 및 플레이리스트 수정을 위한 스코프 추가
+  // 플레이리스트 수정을 위한 스코프를 유지합니다.
   const SPOTIFY_SCOPES = [
     'user-read-email',
     'playlist-read-private',
@@ -305,6 +369,7 @@
     'playlist-modify-private',
     'user-library-modify'
   ].join(' ');
+  // ⚠️ YouTube API Key: 403 오류 발생 시 이 값을 교체해야 합니다.
   const YT_API_KEY = 'AIzaSyAIhw6pfhduLDZRdv5FqzddSBqHjMQQzEE'; 
 
   // 토큰/상태
@@ -319,6 +384,11 @@
   let ytPlayer = null;
   let ytReady = false;
   let progressTimer = null;
+  
+  // 플레이리스트 모달용 캐시
+  let modifiablePlaylists = [];
+  let isPlaylistsLoading = false;
+
 
   // -------------------------
   // 🔐 PKCE 유틸리티 함수 🔐
@@ -352,13 +422,12 @@
   }
 
   // -------------------------
-  // 🛠️ 공통 로드 함수 (추가됨) 🛠️
+  // 🛠️ 공통 로드 함수 🛠️
   // -------------------------
 
   /**
    * Spotify 토큰과 Firebase 사용자 인증이 모두 완료되었는지 확인하고
    * 완료되었다면 플레이리스트를 로드합니다.
-   * 이 함수는 두 인증 상태 중 하나가 변경될 때마다 호출됩니다.
    */
   function checkAndLoadData() {
     if (currentFirebaseUser && accessToken) {
@@ -376,7 +445,6 @@
   // -------------------------
 
   // Firebase 설정
-  // __firebase_config가 정의되어 있을 경우 사용하고, 아니면 기본 설정 사용
   const FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
     apiKey: "AIzaSyC2iRkFZUYZsVIbGzXcCLY1t4eBcfzvwzg",
     authDomain: "mateplay-a.firebaseapp.com",
@@ -528,7 +596,7 @@
         // Spotify 토큰을 성공적으로 받은 후, 데이터 로드를 시도합니다.
         checkAndLoadData();
         
-        setHint('✅ Spotify 인증 성공! (트랙 저장 권한 포함)');
+        setHint('✅ Spotify 인증 성공! (플레이리스트 수정 권한 포함)');
         return true;
     }
 
@@ -541,6 +609,7 @@
     $('#loginBtn').classList.remove('hidden');
     $('#logoutBtn').classList.add('hidden');
     $('#list').innerHTML = '';
+    modifiablePlaylists = []; // 캐시 클리어
     setHint('로그아웃되었습니다. 다시 로그인해 주세요.');
   }
 
@@ -551,9 +620,52 @@
     const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
     if(!res.ok){
       const t = await res.text().catch(()=> '');
-      throw new Error('Spotify 오류: ' + res.status + ' ' + t);
+      throw new Error('Spotify 오류: ' + res.status + ' ' + (t.substring(0, 100) || res.statusText));
     }
     return res.json();
+  }
+  
+  // -------------------------
+  // 🧩 UI 제어 (헤더/탭) 🧩
+  // -------------------------
+  
+  /**
+   * 현재 뷰의 상단 헤더를 설정합니다.
+   * @param {string} htmlContent 표시할 HTML (제목)
+   * @param {boolean} showBackButton 뒤로가기 버튼 표시 여부
+   */
+  function setViewHeader(htmlContent, showBackButton = false) {
+      const header = $('#currentViewHeader');
+      header.innerHTML = '';
+      
+      if (showBackButton) {
+          const backBtn = document.createElement('button');
+          backBtn.className = 'btn';
+          backBtn.innerHTML = '←'; // Back arrow
+          backBtn.style.marginRight = '10px';
+          backBtn.addEventListener('click', () => {
+              setTabs('playlists'); // 플레이리스트 탭으로 돌아가기
+              loadPlaylists(); 
+          });
+          header.appendChild(backBtn);
+      }
+      
+      const titleSpan = document.createElement('span');
+      titleSpan.innerHTML = htmlContent;
+      header.appendChild(titleSpan);
+      header.classList.toggle('hidden', !htmlContent);
+  }
+
+
+  function setTabs(key){
+    $$('.pill').forEach(p => p.classList.remove('active'));
+    if(key === 'playlists') $('#tabPlaylists').classList.add('active');
+    if(key === 'liked') $('#tabLiked').classList.add('active');
+    if(key === 'rec') $('#tabRec').classList.add('active');
+    
+    // 메인 탭 전환 시 헤더 초기화
+    setViewHeader('', false); 
+    setError('');
   }
 
   // -------------------------
@@ -572,6 +684,7 @@
     }
     try{
         $('#list').setAttribute('data-current-view', 'playlist-tracks');
+        setViewHeader(`플레이리스트: <b>${plName}</b>`, true); // 뒤로가기 버튼과 제목 설정
         setHint(`'${plName}'의 트랙을 불러오는 중...`);
         const data = await spotify(`/playlists/${plId}/tracks`, { limit: 100 });
         
@@ -579,7 +692,7 @@
             .filter(i => i.track && i.track.name)
             .map(i => i.track);
             
-        renderList(tracks, 'track'); 
+        renderList(tracks, 'playlist-track'); // 타입 변경: 'playlist-track'
         
         setHint(`'${plName}' (${tracks.length}곡) | 트랙을 누르면 YouTube에서 재생됩니다.`);
         
@@ -601,6 +714,7 @@
     try {
         setTabs('search');
         $('#list').setAttribute('data-current-view', 'search-results');
+        setViewHeader(`검색 결과: <b>${query}</b>`, false); // 검색 결과 헤더 설정
         setHint(`Spotify에서 '${query}' 검색 중...`);
         
         const data = await spotify('/search', { 
@@ -609,9 +723,9 @@
             limit: 50 
         });
 
-        // 'search-track' 타입으로 렌더링하여 저장 버튼을 표시하도록 합니다.
+        // 'search-track' 타입으로 렌더링하여 플레이리스트 추가 버튼을 표시합니다.
         renderList(data.tracks?.items || [], 'search-track'); 
-        setHint(`'${query}' 검색 결과 (${data.tracks?.items?.length || 0}개 트랙) | 💾 버튼을 눌러 보관함에 추가하세요.`);
+        setHint(`'${query}' 검색 결과 (${data.tracks?.items?.length || 0}개 트랙) | ➕ 버튼을 눌러 플레이리스트에 추가하세요.`);
 
     } catch(e) {
         setError('Spotify 검색 오류: ' + e.message);
@@ -619,16 +733,97 @@
     }
   }
   
+  // --- 플레이리스트 추가 모달 로직 ---
+  
   /**
-   * 트랙을 사용자의 "좋아요한 트랙(Liked Songs)"에 추가합니다.
-   * @param {string} trackId 트랙 ID
-   * @param {string} trackName 트랙 이름
+   * 사용자가 수정 가능한 플레이리스트 목록을 가져옵니다. (캐시 사용)
    */
-  async function promptSaveToLikedSongs(trackId, trackName){
-    if (!accessToken) {
-        setError('Spotify 인증이 필요합니다.');
-        return;
+  async function fetchUserModifiablePlaylists() {
+    if (modifiablePlaylists.length > 0 && !isPlaylistsLoading) {
+        return modifiablePlaylists;
     }
+    if (isPlaylistsLoading) return []; 
+    
+    isPlaylistsLoading = true;
+    try {
+        // me/playlists 엔드포인트는 내가 소유하거나 팔로우하는 모든 플레이리스트를 반환합니다.
+        const data = await spotify('/me/playlists', { limit: 50 });
+        
+        // 현재 사용자 ID
+        const currentUserSpotifyId = currentFirebaseUser?.uid; // Spotify ID는 Spotify API 호출로 가져와야 하지만, 편의상 Firebase UID를 사용한다고 가정
+
+        // 내가 만들었거나 (owner.id === user.id) 또는 공동 작업 가능한 (collaborative: true) 플레이리스트를 필터링
+        const playlists = (data.items || []).filter(p => p.owner?.id === currentUserSpotifyId || p.collaborative || p.owner?.display_name === "사용자 이름");
+        
+        // 실제 Spotify User ID를 가져오는 로직 추가 (첫 로그인 시에만 실행)
+        let userId = '';
+        try {
+            const meData = await spotify('/me');
+            userId = meData.id;
+        } catch(e) { /* 무시 */ }
+
+        const finalPlaylists = (data.items || []).filter(p => p.owner?.id === userId || p.collaborative);
+
+        modifiablePlaylists = finalPlaylists;
+        return finalPlaylists;
+    } catch (e) {
+        setError('플레이리스트 목록 로드 오류: ' + e.message);
+        return [];
+    } finally {
+        isPlaylistsLoading = false;
+    }
+  }
+
+  /**
+   * 플레이리스트 선택 모달을 표시합니다.
+   */
+  function showPlaylistSelectionModal(trackId, trackTitle) {
+      const modal = $('#playlistSelectionModal');
+      const titleEl = $('#modalTrackName');
+      const listContainer = $('#playlistListContainer');
+      
+      titleEl.textContent = `트랙: ${trackTitle}`;
+      modal.classList.remove('hidden');
+      
+      listContainer.innerHTML = '<div class="loading-spinner"></div>';
+      
+      fetchUserModifiablePlaylists().then(playlists => {
+          listContainer.innerHTML = '';
+          if(playlists.length === 0) {
+              listContainer.innerHTML = `<div class="hint" style="margin:12px">수정 가능한 플레이리스트가 없습니다.</div>`;
+              return;
+          }
+
+          playlists.forEach(pl => {
+              const item = document.createElement('div');
+              item.className = 'modal-list-item';
+              item.innerHTML = `<span class="name">${pl.name}</span><span class="count">${pl.tracks.total}곡</span>`;
+              item.addEventListener('click', () => {
+                  addTrackToPlaylist(trackId, pl.id, pl.name);
+                  modal.classList.add('hidden');
+              });
+              listContainer.appendChild(item);
+          });
+          
+          // 좋아요한 트랙에 추가하는 옵션도 제공
+          const likedSongsItem = document.createElement('div');
+          likedSongsItem.className = 'modal-list-item';
+          likedSongsItem.style.fontWeight = 'bold';
+          likedSongsItem.innerHTML = `<span class="name" style="color:var(--accent)">❤ 좋아요한 트랙</span><span class="count">바로 추가</span>`;
+          likedSongsItem.addEventListener('click', () => {
+              addTrackToLikedSongs(trackId, trackTitle);
+              modal.classList.add('hidden');
+          });
+          listContainer.prepend(likedSongsItem);
+          
+      });
+  }
+  
+  /**
+   * 특정 트랙을 좋아요한 트랙에 추가합니다.
+   */
+  async function addTrackToLikedSongs(trackId, trackName){
+    if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
     try{
         setHint(`'${trackName}'을(를) 보관함(Liked Songs)에 추가 중...`);
         // user-library-modify 스코프 필요
@@ -644,16 +839,47 @@
             throw new Error(`(${res.status}) ${errText || '추가 실패'}`);
         }
     }catch(e){
-        setError(`트랙 저장 오류: ${e.message}. (새 스코프를 위해 재로그인이 필요할 수 있습니다)`);
+        setError(`트랙 저장 오류: ${e.message}`);
     }
+  }
+
+
+  /**
+   * 특정 트랙을 선택된 플레이리스트에 추가합니다.
+   */
+  async function addTrackToPlaylist(trackId, playlistId, playlistName) {
+      if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
+      try{
+          setHint(`'${playlistName}' 플레이리스트에 트랙을 추가 중...`);
+          const trackUri = `spotify:track:${trackId}`;
+          
+          const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+              method: 'POST',
+              headers: { 
+                  'Authorization': 'Bearer ' + accessToken,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ uris: [trackUri] })
+          });
+          
+          if(res.ok || res.status === 200 || res.status === 201){
+              setHint(`✅ 트랙이 '<b>${playlistName}</b>'에 성공적으로 추가되었습니다!`);
+              // 캐시 클리어 (다음 로드 시 갱신된 정보로 불러옴)
+              modifiablePlaylists = [];
+          } else {
+              const errText = await res.text().catch(()=>'');
+              throw new Error(`(${res.status}) ${errText || '추가 실패'}`);
+          }
+      }catch(e){
+          setError(`플레이리스트 추가 오류: ${e.message}`);
+      }
   }
   
 
-  // UI 렌더링 및 데이터 로드 함수 (기존 코드와 동일)
   /**
    * 리스트를 렌더링합니다. 'search-track' 타입일 경우 저장 버튼을 추가합니다.
    * @param {Array} items 표시할 항목 배열
-   * @param {('playlist'|'track'|'search-track')} type 항목의 타입
+   * @param {('playlist'|'playlist-track'|'search-track')} type 항목의 타입
    */
   function renderList(items, type){
     const root = $('#list');
@@ -664,20 +890,17 @@
     }
     const frag = document.createDocumentFragment();
     items.forEach((it, idx) => {
-      // type: 'playlist', 'track', 'search-track'
       const card = document.createElement('div');
       card.className = 'card';
       card.setAttribute('role', 'listitem');
-      // 플레이리스트를 바로 재생하지 않고, 트랙이나 검색 결과만 재생
       card.addEventListener('click', () => onItemClick(it, type));
 
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
-      // 이미지가 존재하는 경우 썸네일 설정
       let imageUrl = '';
       if(type === 'playlist' && it.images?.[0]?.url){
         imageUrl = it.images[0].url;
-      }else if((type === 'track' || type === 'search-track') && it.album?.images?.[0]?.url){
+      }else if((type === 'playlist-track' || type === 'search-track') && it.album?.images?.[0]?.url){
         imageUrl = it.album.images[0].url;
       }
       
@@ -693,7 +916,7 @@
       meta.className = 'meta';
       const t = document.createElement('div');
       t.className = 'title';
-      t.textContent = type === 'playlist' ? it.name : it.name || it.track?.name || '제목 없음';
+      t.textContent = it.name || it.track?.name || '제목 없음';
 
       const s = document.createElement('div');
       s.className = 'subtitle';
@@ -708,27 +931,32 @@
 
       const chip = document.createElement('span');
       chip.className = 'chip';
-      chip.textContent = type === 'playlist' ? 'Playlist' : (type === 'search-track' ? 'Search' : 'Track');
+      // === [개선] 칩 텍스트 변경: 뷰에 따라 더 명확하게 표시 ===
+      chip.textContent = type === 'playlist' ? 'Playlist' : 
+                         (type === 'search-track' ? 'Search Track' : 'Playlist Track'); 
+      // =======================================================
 
       meta.appendChild(t); meta.appendChild(s);
       card.appendChild(thumb);
       card.appendChild(meta);
       
-      // [새로운 로직] 검색 결과 트랙인 경우 저장 버튼 추가
+      // [새로운 로직] 검색 결과 트랙인 경우 플레이리스트 추가 버튼 추가
       if(type === 'search-track'){
           const saveBtn = document.createElement('button');
           saveBtn.className = 'btn save-btn';
-          // 저장 아이콘 (유저 모양 대신 저장 디스크 모양을 사용할 수도 있습니다: 💾)
-          saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-          saveBtn.title = '내 Spotify 보관함(Liked Songs)에 저장';
+          // '+' 아이콘으로 변경
+          saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>`;
+          saveBtn.title = '플레이리스트에 추가';
           saveBtn.addEventListener('click', (e) => {
               e.stopPropagation(); // 카드 클릭 시 트랙 재생 방지
-              promptSaveToLikedSongs(it.id, it.name); 
+              const trackItem = it.track || it;
+              const artists = (trackItem.artists || []).map(a=>a.name).join(', ');
+              showPlaylistSelectionModal(trackItem.id, `${trackItem.name} - ${artists}`); 
           });
           card.appendChild(saveBtn); 
       }
       
-      card.appendChild(chip); // 칩은 맨 끝에 위치
+      card.appendChild(chip);
 
       frag.appendChild(card);
     });
@@ -745,7 +973,7 @@
       if(type === 'playlist'){
         // 플레이리스트 클릭 시, 바로 재생하지 않고 트랙 목록 로드
         loadPlaylistTracks(item.id, item.name);
-      } else if (type === 'track' || type === 'search-track') {
+      } else if (type === 'playlist-track' || type === 'search-track') {
         // 트랙 또는 검색 결과 트랙 클릭 시 재생
         const trackItem = item.track || item;
         queue = [toQueueItem(trackItem)];
@@ -809,8 +1037,16 @@
     url.searchParams.set('videoCategoryId','10'); // Music
     url.searchParams.set('maxResults','1');
     url.searchParams.set('key', YT_API_KEY);
+    
+    // ⚠️ 오류 발생 시 로그 확인: 403 오류는 API 키 문제이거나 할당량을 초과했을 수 있습니다.
+    console.log(`Youtube Query: ${q}`);
+    
     const res = await fetch(url);
-    if(!res.ok){ throw new Error(res.status + ' 검색 실패'); }
+    if(!res.ok){ 
+        const errorText = await res.text().catch(() => 'Unknown error');
+        console.error("YouTube Search Failed:", res.status, errorText);
+        throw new Error(`YouTube API 오류: ${res.status} (키/할당량 문제일 수 있음)`); 
+    }
     const j = await res.json();
     return j.items?.[0]?.id?.videoId || null;
   }
@@ -878,15 +1114,6 @@
       });
   }
 
-  function setTabs(key){
-    $$('.pill').forEach(p => p.classList.remove('active'));
-    if(key === 'playlists') $('#tabPlaylists').classList.add('active');
-    if(key === 'liked') $('#tabLiked').classList.add('active');
-    if(key === 'rec') $('#tabRec').classList.add('active');
-    // 'search' 탭은 UI에 없지만, 내부 상태로 사용
-    setError('');
-  }
-
   async function loadPlaylists(){
     if (!currentFirebaseUser || !accessToken) {
       setHint('Firebase 및 Spotify 인증이 필요합니다.');
@@ -906,7 +1133,7 @@
       setHint('좋아요한 트랙을 불러오는 중…');
       const data = await spotify('/me/tracks', { limit: 50 });
       const tracks = (data.items || []).map(it => it.track).filter(Boolean);
-      renderList(tracks, 'track');
+      renderList(tracks, 'playlist-track'); // 'playlist-track' 타입 사용
       setHint('좋아요한 트랙 | 클릭하여 YouTube에서 재생');
     }catch(e){ setError(e.message); setHint(''); }
   }
@@ -928,7 +1155,7 @@
         params.seed_genres = 'pop';
       }
       const rec = await spotify('/recommendations', Object.assign({ limit: 30 }, params));
-      renderList(rec.tracks || [], 'track');
+      renderList(rec.tracks || [], 'playlist-track'); // 'playlist-track' 타입 사용
       setHint('맞춤형 추천 | 클릭하여 YouTube에서 재생');
     }catch(e){ setError(e.message); setHint(''); }
   }
@@ -952,15 +1179,10 @@
       if(ytPlayer.isMuted()) ytPlayer.unMute(); else ytPlayer.mute();
     });
 
-    // ------------------------------------
-    // 🔥 검색 기능 수정: Spotify 검색으로 변경 🔥
-    // ------------------------------------
     const searchHandler = () => {
         const q = $('#searchInput').value.trim();
         if(!q) return;
-        // Spotify 트랙 검색 함수 호출
         spotifySearchTracks(q);
-        // 탭 상태를 'search'로 변경하지만 UI의 탭 활성화는 하지 않음
         setTabs('search');
     };
 
@@ -969,8 +1191,7 @@
         searchHandler();
       }
     });
-    // 검색 아이콘 클릭 이벤트 바인딩
-    document.getElementById('searchIcon').addEventListener('click', searchHandler);
+    $('#searchIcon').addEventListener('click', searchHandler);
 
 
     $('#seek').addEventListener('input', (e) => {
@@ -985,16 +1206,18 @@
     $('#loginBtn').addEventListener('click', login);
     $('#logoutBtn').addEventListener('click', logout);
 
-    // 🔥 사용자 요청: Firebase 로그인 버튼 클릭 시 실제 /auth.html 리디렉션 처리 🔥
+    // Firebase 인증 이벤트 바인딩
     $('#firebaseLoginBtn').addEventListener('click', () => {
       if (!currentFirebaseUser) {
-          console.log("실제 리디렉션: /auth.html로 이동합니다.");
           window.location.href = '/auth';
       }
     });
-    
     document.getElementById('firebaseLogoutBtn').addEventListener('click', firebaseLogout);
     
+    // 모달 닫기 버튼 이벤트 바인딩
+    $('#modalCloseBtn').addEventListener('click', () => {
+        $('#playlistSelectionModal').classList.add('hidden');
+    });
   }
   
   function setupProgressTimer(){
