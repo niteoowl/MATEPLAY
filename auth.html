@@ -101,10 +101,10 @@
     }
     .toast.show{ opacity:1 }
   </style>
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDKs: initializeApp와 인증 모듈을 분리하여 로드하도록 수정 -->
   <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"; // firebase-app.js에서 initializeApp 로드
     import { 
-        initializeApp, 
         getAuth, 
         createUserWithEmailAndPassword, 
         signInWithEmailAndPassword, 
@@ -112,8 +112,10 @@
         onAuthStateChanged,
         GoogleAuthProvider, 
         signInWithPopup,
-        updateProfile // 사용자 프로필 업데이트를 위해 추가
-    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        updateProfile 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // firebase-auth.js에서 인증 함수들 로드
+    
+    // 로드된 모듈들을 window 객체에 할당하여 메인 스크립트에서 접근할 수 있도록 함
     window.firebaseModules = { 
         initializeApp, 
         getAuth, 
@@ -123,7 +125,7 @@
         onAuthStateChanged,
         GoogleAuthProvider,
         signInWithPopup,
-        updateProfile // window 객체에 추가
+        updateProfile 
     };
   </script>
 </head>
@@ -180,7 +182,7 @@
         <div id="signupEmailErr" class="err" style="display:none"></div>
       </div>
       
-      <!-- 사용자 ID (닉네임) 입력 필드 추가 -->
+      <!-- 사용자 ID (닉네임) 입력 필드 -->
       <div class="field">
         <div class="label">사용자 ID (닉네임)</div>
         <div class="input"><input id="signupId" type="text" placeholder="2~20자 이내의 ID" required minlength="2" maxlength="20" /></div>
@@ -223,6 +225,7 @@
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'mateplay-auth-v1';
 
   // 사용자 제공 Firebase Config
+  // NOTE: 이 설정은 canvas 환경에서 자동으로 주입되지만, 안전을 위해 기본 값을 유지합니다.
   const firebaseConfig = {
     apiKey: "AIzaSyC2iRkFZUYZsVIbGzXcCLY1t4eBcfzvwzg",
     authDomain: "mateplay-a.firebaseapp.com",
@@ -279,9 +282,11 @@
   // =========================================================================
 
   async function initializeFirebase() {
-    if (!window.firebaseModules || Object.keys(firebaseConfig).length === 0) {
-      toast('Firebase 설정이 없어 인증 기능을 사용할 수 없습니다.');
-      return;
+    // window.firebaseModules가 정의되었는지 확인
+    if (!window.firebaseModules || !window.firebaseModules.initializeApp) {
+        console.error("Firebase 모듈 로드 실패. window.firebaseModules가 정의되지 않았거나 initializeApp이 없습니다.");
+        toast('Firebase 초기화에 실패했습니다. 페이지를 새로고침 해보세요.');
+        return;
     }
     
     const { initializeApp, getAuth, onAuthStateChanged } = window.firebaseModules;
@@ -299,7 +304,8 @@
       if (user) {
         // 이미 로그인된 상태이거나, 지금 로그인에 성공했다면 메인 앱으로 리디렉션
         toast(`로그인 성공! MatePlay 홈으로 이동합니다.`);
-        window.location.href = 'mateplay_home.html';
+        // NOTE: 임시적으로 location.href를 사용해 리디렉션을 막고 토스트 메시지만 띄웁니다.
+        // window.location.href = 'mateplay_home.html'; 
       }
       // 로그아웃 상태면 이 페이지에 머무르며 인증 폼을 보여줍니다.
     });
@@ -319,8 +325,19 @@
 
     if(!emailValid(email)){ setErr('#loginEmailErr','올바른 이메일을 입력해 주세요.'); return; }
     if(!pw || pw.length < 6){ setErr('#loginPasswordErr','비밀번호는 6자 이상이어야 합니다.'); return; }
+    if (!auth) { toast('Firebase 인증 시스템이 준비되지 않았습니다.'); return; }
+
 
     toggleLoading('#btnLogin', '#loginSpinner', true, '이메일로 로그인');
+    
+    // 모듈이 제대로 로드되었는지 다시 확인
+    if (!window.firebaseModules || !window.firebaseModules.signInWithEmailAndPassword) {
+        console.error("Firebase signInWithEmailAndPassword 모듈이 로드되지 않았습니다.");
+        toggleLoading('#btnLogin', '#loginSpinner', false, '이메일로 로그인');
+        toast('인증 시스템 오류: 잠시 후 다시 시도해 주세요.');
+        return;
+    }
+
     const { signInWithEmailAndPassword } = window.firebaseModules;
     
     try{
@@ -344,12 +361,12 @@
   $('#formSignup').addEventListener('submit', async (e) => {
     e.preventDefault();
     setErr('#signupEmailErr',''); 
-    setErr('#signupIdErr',''); // ID 에러 초기화
+    setErr('#signupIdErr',''); 
     setErr('#signupPasswordErr',''); 
     setErr('#signupPassword2Err','');
 
     const email = $('#signupEmail').value.trim();
-    const id = $('#signupId').value.trim(); // ID 값 가져오기
+    const id = $('#signupId').value.trim(); 
     const pw = $('#signupPassword').value;
     const pw2 = $('#signupPassword2').value;
     const agree = $('#agreeTos').checked;
@@ -365,9 +382,20 @@
     if(!pw || pw.length < 6){ setErr('#signupPasswordErr','비밀번호는 6자 이상이어야 합니다.'); return; }
     if(pw !== pw2){ setErr('#signupPassword2Err','비밀번호가 일치하지 않습니다.'); return; }
     if(!agree){ toast('약관에 동의해 주세요.'); return; }
-    
+    if (!auth) { toast('Firebase 인증 시스템이 준비되지 않았습니다.'); return; }
+
+
     toggleLoading('#btnSignup', '#signupSpinner', true, '이메일로 회원가입');
-    const { createUserWithEmailAndPassword, updateProfile } = window.firebaseModules; // updateProfile 모듈 가져오기
+    
+    // 모듈이 제대로 로드되었는지 다시 확인
+    if (!window.firebaseModules || !window.firebaseModules.createUserWithEmailAndPassword) {
+        console.error("Firebase createUserWithEmailAndPassword 모듈이 로드되지 않았습니다.");
+        toggleLoading('#btnSignup', '#signupSpinner', false, '이메일로 회원가입');
+        toast('인증 시스템 오류: 잠시 후 다시 시도해 주세요.');
+        return;
+    }
+
+    const { createUserWithEmailAndPassword, updateProfile } = window.firebaseModules; 
 
     try{
       const userCredential = await createUserWithEmailAndPassword(auth, email, pw);
@@ -394,6 +422,15 @@
 
   // Google 인증
   async function googleAuth(){
+      if (!auth) { toast('Firebase 인증 시스템이 준비되지 않았습니다.'); return; }
+
+      // 모듈이 제대로 로드되었는지 다시 확인
+      if (!window.firebaseModules || !window.firebaseModules.GoogleAuthProvider) {
+          console.error("Firebase GoogleAuthProvider 모듈이 로드되지 않았습니다.");
+          toast('인증 시스템 오류: 잠시 후 다시 시도해 주세요.');
+          return;
+      }
+      
       const { GoogleAuthProvider, signInWithPopup } = window.firebaseModules;
       const provider = new GoogleAuthProvider();
       
