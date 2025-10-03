@@ -588,6 +588,7 @@
   let currentFirebaseUser = null;
   let auth;
   let db; 
+  let currentPlaylistTracks = []; // 현재 로드된 플레이리스트 트랙 저장 (연속 재생용)
 
   // ** 로컬 인메모리 캐시 **
   let localVideoIdCache = {}; 
@@ -742,6 +743,7 @@
     spotifyProfileImage = '';
     userPlaylists = []; 
     allPlaylistsLoaded = false;
+    currentPlaylistTracks = []; // 언링크 시 트랙 초기화
     updateSpotifyAuthUI(false); 
     if (currentPageView === 'home') loadHomeContent(currentHomeTab);
   }
@@ -846,6 +848,7 @@
           backBtn.addEventListener('click', () => { 
               currentHomeTab = 'playlists';
               loadHomeContent('playlists'); 
+              currentPlaylistTracks = []; // 뒤로가기 시 트랙 목록 초기화
           });
           header.appendChild(backBtn);
       }
@@ -1046,6 +1049,7 @@
         const info = document.createElement('div');
         info.className = 'track-info';
         info.addEventListener('click', () => { 
+            // 검색 결과 트랙 재생 시 큐에 해당 곡만 넣고 재생
             queue = [toQueueItem(it)];
             queueIndex = 0;
             playQueueIndex(0, true);
@@ -1196,9 +1200,15 @@
     try{
         $('#list').setAttribute('data-current-view', 'playlist-tracks');
         setViewHeader(`플레이리스트: <b>${plName}</b>`, true); 
+        
         const data = await spotify(`/playlists/${plId}/tracks`, { limit: 100 });
-        const tracks = (data.items||[]).filter(i => i.track && i.track.name).map(i => i.track);
-        renderList(tracks, 'playlist-track'); 
+        // 🔥 수정: item.track이 null이 아닌 유효한 트랙 객체인 경우만 필터링하여 저장 🔥
+        currentPlaylistTracks = (data.items || [])
+            .filter(item => item.track && item.track.name) 
+            .map(item => item.track); 
+            
+        renderList(currentPlaylistTracks, 'playlist-track'); 
+
     }catch(e){ setError('플레이리스트 트랙 로드 오류: ' + e.message); }
   }
 
@@ -1207,30 +1217,37 @@
     root.innerHTML = '';
     if(!items || !items.length){ root.innerHTML = `<div class="hint" style="margin:12px; color:var(--muted); text-align:center;">항목이 비어 있습니다.</div>`; return; }
     const frag = document.createDocumentFragment();
-    items.forEach((it) => {
+    items.forEach((it, index) => {
       const card = document.createElement('div');
       card.className = 'card';
-      card.addEventListener('click', () => onItemClick(it, type));
+      // 🔥 수정: 플레이리스트 트랙 클릭 시 해당 플레이리스트 전체를 큐에 넣고 클릭한 곡부터 재생 🔥
+      card.addEventListener('click', () => onItemClick(it, type, index));
 
       const thumb = document.createElement('div');
       thumb.className = 'thumb';
       let imageUrl = '';
+      let trackItem = it; // 기본값은 it
+      
       if(type === 'playlist' && it.images?.[0]?.url){ imageUrl = it.images[0].url; }
-      else if(type === 'playlist-track' && it.album?.images?.[0]?.url){ imageUrl = it.album.images[0].url; }
+      // 🔥 수정: 플레이리스트 트랙의 앨범 아트를 정확히 가져오도록 trackItem 사용 🔥
+      else if(type === 'playlist-track'){ 
+          trackItem = it.track || it;
+          if(trackItem.album?.images?.[0]?.url) imageUrl = trackItem.album.images[0].url;
+      }
       
       if(imageUrl){ thumb.style.backgroundImage = `url(${imageUrl})`; thumb.style.backgroundSize = 'cover'; thumb.textContent = ''; }
       else{ thumb.textContent = type === 'playlist' ? '💿' : '🎵'; }
 
       const meta = document.createElement('div');
       meta.className = 'meta';
-      const t = document.createElement('div'); t.className = 'title'; t.textContent = it.name || it.track?.name || '제목 없음';
+      // 🔥 수정: 트랙 이름도 trackItem 사용 🔥
+      const t = document.createElement('div'); t.className = 'title'; t.textContent = trackItem.name || '제목 없음';
 
       const s = document.createElement('div');
       s.className = 'subtitle';
       if(type === 'playlist'){
         s.textContent = `${(it.tracks?.total||0)}곡 · ${it.owner?.display_name||'—'}`;
       }else{
-        const trackItem = it.track || it;
         const artists = (trackItem.artists || []).map(a=>a.name).join(', ');
         const album = trackItem.album?.name || '';
         s.textContent = `${artists}${album ? ' · ' + album : ''}`;
@@ -1246,14 +1263,24 @@
     root.appendChild(frag);
   }
 
-  async function onItemClick(item, type){
+  async function onItemClick(item, type, index = 0){
     try{
-      if(type === 'playlist'){ loadPlaylistTracks(item.id, item.name); } 
+      if(type === 'playlist'){ 
+          loadPlaylistTracks(item.id, item.name); 
+      } 
       else if (type === 'playlist-track') {
-        const trackItem = item.track || item;
-        queue = [toQueueItem(trackItem)];
-        queueIndex = 0;
-        playQueueIndex(0, true);
+        // 🔥 수정: 현재 로드된 전체 플레이리스트 트랙을 큐에 설정하고 선택된 곡부터 재생 🔥
+        if (currentPlaylistTracks.length > 0) {
+            queue = currentPlaylistTracks.map(t => toQueueItem(t));
+            queueIndex = index;
+            playQueueIndex(queueIndex, true); 
+        } else {
+            // 단일 트랙만 재생 (예상치 못한 경우 대비)
+            const trackItem = item.track || item;
+            queue = [toQueueItem(trackItem)];
+            queueIndex = 0;
+            playQueueIndex(0, true);
+        }
       }
     }catch(e){ setError(e.message); }
   }
@@ -1288,6 +1315,7 @@
   // -------------------------
   
   function toQueueItem(t){
+    // 🔥 수정: toQueueItem은 항상 유효한 트랙 객체를 받도록 가정하고 로직 단순화 🔥
     const title = t.name || '제목 없음';
     const artists = (t.artists||[]).map(a=>a.name).join(', ');
     const query = `${title} ${artists} official audio`; 
@@ -1425,6 +1453,7 @@
     if(state === 1){ // Playing
       setError(''); 
     } else if(state === 0){ // Ended
+      // 🔥 수정: 큐의 다음 곡으로 자동 이동 🔥
       if(queueIndex < queue.length - 1){ queueIndex++; playQueueIndex(queueIndex, true); }
     }
   }
