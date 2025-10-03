@@ -1,214 +1,326 @@
-<div id="searchViewContainer">
-    <div style="padding: 0 10px 10px;">
-        <!-- 검색 입력 필드 및 버튼 -->
-        <div style="display: flex; gap: 8px;">
-            <input type="text" id="searchInput" placeholder="아티스트, 노래 제목, 키워드를 입력하세요" 
-                   style="flex-grow:1; padding:14px; border-radius:12px; border:1px solid #333; 
-                          background:var(--panel-2); color:var(--text); font-size:16px; outline:none;" />
-            <button id="searchBtn" style="appearance:none; border:none; outline:none; font-weight:700;
-                                          padding:10px 18px; border-radius:12px; cursor:pointer; 
-                                          background:var(--accent); color:#0a0d12; white-space:nowrap;
-                                          box-shadow:0 4px 10px rgba(30,215,96,0.2);">
-                <i class="fas fa-search"></i>
-            </button>
-        </div>
-        
-        <div id="searchMessage" style="margin-top:10px; font-size:12px; color:var(--muted); text-align:left;">
-            <span id="spotifyStatusMessage"></span>
-        </div>
-    </div>
+<!-- 
+    이 파일은 index.html의 loadExternalPage 함수에 의해 동적으로 로드됩니다.
+    index.html에 정의된 전역 CSS 변수(var(--panel), var(--accent) 등)와
+    JavaScript 함수/변수($, setError, setHint, spotify, toQueueItem, playQueueIndex, currentFirebaseUser, accessToken)를 사용합니다.
+-->
 
-    <!-- 검색 결과가 표시될 영역. 메인 컨테이너의 .grid 스타일을 이용합니다. -->
-    <div id="searchResults" class="grid" style="min-height: 100px;">
-        <p style="text-align:center; padding-top:40px; color:var(--muted);">검색 버튼을 눌러 트랙을 찾아보세요.</p>
-    </div>
+<!-- 
+    검색창 컨테이너
+    sticky 속성과 음수 마진을 사용하여 Appbar 바로 아래에 고정되고,
+    list 영역을 벗어나지 않도록 합니다.
+-->
+<div id="search-container" class="sticky top-0 z-50 p-3" 
+     style="background:var(--panel-2); margin:-12px -12px 12px; border-bottom:1px solid rgba(255,255,255,0.06);">
+    
+    <form id="searchForm" class="flex gap-2 w-full">
+        <!-- 검색 입력 필드 -->
+        <input type="search" id="searchInput" placeholder="곡, 아티스트, 앨범 등 전체 검색..." 
+               class="flex-1 p-3 rounded-xl border-2 border-transparent text-base focus:ring-2 focus:ring-opacity-70" 
+               style="background:var(--panel); color:var(--text); border-color:rgba(255,255,255,0.15); transition:border-color 0.2s, box-shadow 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"
+               onfocus="this.style.borderColor = 'var(--accent)'; this.style.boxShadow = '0 0 15px rgba(30,215,96,0.2)'; "
+               onblur="this.style.borderColor = 'rgba(255,255,255,0.15)'; this.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';"
+        />
+        
+        <!-- 검색 버튼 -->
+        <button type="submit" id="searchBtn" class="login-btn" style="padding:10px 16px; border-radius:12px;">
+            <i class="fas fa-search text-lg"></i>
+        </button>
+    </form>
 </div>
 
+<!-- 검색 결과 제목 및 힌트 -->
+<div id="searchResultsTitle" class="section-title">검색 결과를 표시하려면 입력 후 엔터를 누르세요.</div>
+
+
 <script>
-    // 전역 유틸리티 함수 및 변수 접근
-    const YT_API_KEY = window.YT_API_KEY;
-    const setError = window.setError;
-    const setHint = window.setHint;
-    const isSpotifyAuthenticated = window.isSpotifyAuthenticated;
-    const fetchSpotifyApi = window.fetchSpotifyApi;
-    const playYouTubeTrack = window.playYouTubeTrack;
-    const playSpotifyTrack = window.playSpotifyTrack; // Spotify 트랙 재생 (YouTube ID 검색 후 재생)
-
-    const searchInput = document.getElementById('searchInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const searchResultsContainer = document.getElementById('searchResults');
-    const spotifyStatusMessage = document.getElementById('spotifyStatusMessage');
-
-    let isSearching = false;
-
-    // Spotify 인증 상태에 따라 메시지 업데이트
-    function updateStatusMessage() {
-        if (isSpotifyAuthenticated()) {
-            spotifyStatusMessage.innerHTML = '✅ **Spotify & YouTube 통합 검색**이 활성화되었습니다.';
-            spotifyStatusMessage.style.color = 'var(--accent)';
-        } else {
-            spotifyStatusMessage.innerHTML = '⚠️ Spotify 연동 시 **통합 검색**을 이용할 수 있습니다.';
-            spotifyStatusMessage.style.color = 'var(--muted)';
-        }
+    // 전역 환경에서 정의된 함수와 변수($ 등)를 사용합니다.
+    const searchInput = $('#searchInput');
+    const searchForm = $('#searchForm');
+    const searchResultsTitleDiv = $('#searchResultsTitle');
+    const resultsListContainer = $('#list'); // index.html의 메인 리스트 컨테이너
+    
+    // 이 뷰가 로드될 때 #list의 뷰 상태를 'search'로 설정합니다.
+    if (resultsListContainer) {
+        resultsListContainer.setAttribute('data-current-view', 'search');
     }
 
-    // 통합 검색 함수
-    async function performIntegratedSearch(query) {
-        if (!query || isSearching) return;
-
-        setError('');
-        isSearching = true;
-
-        const isAuthenticated = isSpotifyAuthenticated();
-        const searchStatusText = isAuthenticated ? 'Spotify와 YouTube에서 통합 검색 중...' : 'YouTube에서 검색 중... (Spotify 미연동)';
-        searchResultsContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--accent);"></i><p style="margin-top:10px;">${searchStatusText}</p></div>`;
-
-        const searchPromises = [searchYouTube(query)];
-        if (isAuthenticated) {
-            searchPromises.push(searchSpotify(query));
+    // 폼 제출 이벤트 핸들러
+    searchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (!query) {
+            setHint('검색어를 입력해 주세요.');
+            return;
         }
-
-        try {
-            const results = await Promise.all(searchPromises);
-            const combinedResults = results.flat().filter(Boolean); // 결과를 하나의 배열로 합침
-            renderSearchResults(combinedResults);
-            setHint(`검색 결과: ${combinedResults.length}개 (YouTube ${results[0].length}개${isAuthenticated ? ' + Spotify ' + results[1].length + '개' : ''}) | 클릭하여 즉시 재생`);
-        } catch (e) {
-            setError('통합 검색 오류: ' + e.message);
-            searchResultsContainer.innerHTML = `<p style="text-align:center; padding: 40px; color: var(--danger);">검색 중 오류 발생. API 키 또는 할당량을 확인해 주세요.</p>`;
-        } finally {
-            isSearching = false;
-        }
-    }
-
-    // YouTube 검색 함수 (결과 포맷 통일)
-    async function searchYouTube(query) {
-        const url = new URL('https://www.googleapis.com/youtube/v3/search');
-        url.searchParams.set('part', 'snippet');
-        url.searchParams.set('q', query);
-        url.searchParams.set('type', 'video');
-        url.searchParams.set('videoCategoryId', '10');
-        url.searchParams.set('maxResults', '10'); // 10개만 검색
-        url.searchParams.set('key', YT_API_KEY);
-
-        const response = await fetch(url);
-        if (!response.ok) {
-             throw new Error(`YouTube API 오류: ${response.status}`);
-        }
-        const data = await response.json();
         
-        return (data.items || []).map(item => ({
-            source: 'youtube',
-            id: item.id.videoId,
-            title: item.snippet.title,
-            subtitle: item.snippet.channelTitle,
-            image: item.snippet.thumbnails.medium.url,
-            videoId: item.id.videoId // 재생에 필요
-        }));
-    }
+        await performSearch(query);
+    });
 
-    // Spotify 검색 함수 (결과 포맷 통일)
-    async function searchSpotify(query) {
-        try {
-            const data = await fetchSpotifyApi('/search', { 
-                q: query, 
-                type: 'track', 
-                limit: 10 // 10개만 검색
-            });
-            
-            return (data.tracks?.items || []).map(track => ({
-                source: 'spotify',
-                id: track.id,
-                title: track.name,
-                subtitle: track.artists.map(a => a.name).join(', '),
-                image: track.album.images[0]?.url || '',
-                trackObject: track // 재생에 필요
-            }));
-        } catch (error) {
-            // Spotify 인증 만료 등의 오류는 무시하고 YouTube 결과만 표시할 수 있도록 빈 배열 반환
-            console.error("Spotify Search Failed:", error);
-            return [];
+    /**
+     * Spotify API를 사용하여 트랙, 아티스트, 앨범을 검색하고 결과를 표시합니다.
+     */
+    async function performSearch(query) {
+        if (!currentFirebaseUser) {
+            setError('로그인이 필요합니다.');
+            return;
         }
-    }
-
-    // 검색 결과를 화면에 렌더링하는 함수
-    function renderSearchResults(items) {
-        searchResultsContainer.innerHTML = '';
-        if (items.length === 0) {
-            searchResultsContainer.innerHTML = `<p style="text-align:center; padding: 40px; color: var(--muted);">검색 결과가 없습니다. 다른 키워드로 검색해 보세요.</p>`;
+        if (!accessToken) {
+            setError('Spotify 연동이 필요합니다. 프로필 드롭다운을 확인해 주세요.');
             return;
         }
 
-        const frag = document.createDocumentFragment();
-        items.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card search-result';
-            
-            card.addEventListener('click', () => {
-                if (item.source === 'youtube') {
-                    playYouTubeTrack(item);
-                } else if (item.source === 'spotify') {
-                    playSpotifyTrack(item.trackObject);
-                }
+        try {
+            // 로딩 상태 표시
+            resultsListContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">'${query}' 검색 중...</p></div>`;
+            setHint(`Spotify에서 '${query}'를 검색하고 있습니다.`);
+            setError('');
+
+            // 🔥 Spotify API 호출: 트랙, 아티스트, 앨범 모두 검색 🔥
+            const data = await spotify('/search', { 
+                q: query, 
+                type: 'track,artist,album', 
+                limit: 10 
             });
 
-            const thumb = document.createElement('div');
-            thumb.className = 'thumb';
-            if (item.image) {
-                thumb.style.backgroundImage = `url(${item.image})`;
+            const totalResults = renderSearchResults(data, query);
+
+            if (totalResults > 0) {
+                setHint(`✅ '${query}'에 대한 ${totalResults}개 이상의 항목이 검색되었습니다.`);
+                searchResultsTitleDiv.textContent = '통합 검색 결과:';
             } else {
-                thumb.textContent = '🎵';
-            }
-            
-            const meta = document.createElement('div');
-            meta.className = 'meta';
-            meta.innerHTML = `
-                <div class="title">${item.title}</div>
-                <div class="subtitle">${item.subtitle}</div>
-            `;
-
-            const chip = document.createElement('span');
-            chip.className = 'chip';
-            if (item.source === 'youtube') {
-                chip.textContent = 'YouTube';
-                chip.style.backgroundColor = '#ff000044'; // YouTube Red
-            } else if (item.source === 'spotify') {
-                chip.textContent = 'Spotify';
-                chip.style.backgroundColor = 'var(--accent)';
-                chip.style.color = '#0a0d12';
+                setHint(`🔎 '${query}'에 대한 검색 결과가 없습니다.`);
+                resultsListContainer.innerHTML = `<div class="hint" style="margin:20px 6px;">검색 결과가 없습니다. 다른 키워드로 다시 시도해 보세요.</div>`;
+                searchResultsTitleDiv.textContent = '검색 결과를 찾을 수 없습니다.';
             }
 
-            card.appendChild(thumb);
-            card.appendChild(meta);
-            card.appendChild(chip);
-            frag.appendChild(card);
-        });
-        searchResultsContainer.appendChild(frag);
+        } catch (e) {
+            const errorMessage = e.message.includes('인증이 만료') ? 'Spotify 인증이 만료되었습니다. 다시 연동해 주세요.' : e.message;
+            setError('검색 오류: ' + errorMessage);
+            resultsListContainer.innerHTML = '';
+            searchResultsTitleDiv.textContent = '검색 중 오류가 발생했습니다.';
+        }
     }
+    
+    /**
+     * 다중 검색 결과를 섹션별로 렌더링합니다.
+     */
+    function renderSearchResults(data, query) {
+        resultsListContainer.innerHTML = ''; // 기존 콘텐츠 제거
+        let totalCount = 0;
+        
+        // 검색 결과를 저장할 임시 컨테이너
+        const fragment = document.createDocumentFragment();
 
-    // 이벤트 리스너 설정
-    function setupSearchListeners() {
-        // 검색 버튼 클릭 이벤트
-        searchBtn.addEventListener('click', () => {
-            const query = searchInput.value.trim();
-            if (query) performIntegratedSearch(query);
+        // 1. 트랙 섹션 (Track)
+        if (data.tracks?.items?.length) {
+            totalCount += data.tracks.items.length;
+            fragment.appendChild(renderSection(data.tracks.items, 'track', '곡 (클릭하여 즉시 재생)', query));
+        }
+
+        // 2. 아티스트 섹션 (Artist)
+        if (data.artists?.items?.length) {
+            totalCount += data.artists.items.length;
+            fragment.appendChild(renderSection(data.artists.items, 'artist', '아티스트 (클릭하여 인기 트랙 보기)', query));
+        }
+
+        // 3. 앨범 섹션 (Album)
+        if (data.albums?.items?.length) {
+            totalCount += data.albums.items.length;
+            fragment.appendChild(renderSection(data.albums.items, 'album', '앨범 (클릭하여 트랙 목록 보기)', query));
+        }
+        
+        if (totalCount === 0) {
+            return 0; // 결과 없음
+        }
+
+        resultsListContainer.appendChild(fragment);
+        return totalCount;
+    }
+    
+    /**
+     * 단일 섹션을 렌더링하고 DOM 요소를 반환합니다.
+     */
+    function renderSection(items, itemType, titleText) {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.style.marginBottom = '20px';
+        
+        const title = document.createElement('h3');
+        title.className = 'section-title';
+        title.style.fontSize = '1.1em';
+        title.style.margin = '10px 6px';
+        title.textContent = titleText;
+        sectionDiv.appendChild(title);
+        
+        items.forEach(item => {
+            sectionDiv.appendChild(createSearchCard(item, itemType));
         });
         
-        // 엔터 키 입력 이벤트
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                const query = searchInput.value.trim();
-                if (query) performIntegratedSearch(query);
-            }
-        });
+        return sectionDiv;
+    }
+    
+    /**
+     * 항목별 카드 DOM 요소를 생성하고 클릭 이벤트를 추가합니다.
+     */
+    function createSearchCard(item, itemType) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.cursor = 'pointer'; 
+        
+        // 클릭 핸들러: 각 유형에 따라 다른 동작
+        card.addEventListener('click', () => { handleSearchItemClick(item, itemType); });
 
-        // 페이지 로드 시 포커스 및 상태 메시지 업데이트
-        setTimeout(() => {
-            searchInput.focus();
-            updateStatusMessage();
-        }, 100);
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        let imageUrl = '';
+        
+        if (itemType === 'track' && item.album?.images?.[0]?.url) { 
+            imageUrl = item.album.images[0].url; 
+        } else if (itemType === 'album' && item.images?.[0]?.url) {
+            imageUrl = item.images[0].url;
+        } else if (itemType === 'artist' && item.images?.[0]?.url) {
+            imageUrl = item.images[0].url;
+            thumb.style.borderRadius = '50%'; // 아티스트는 둥글게
+        }
+        
+        if (imageUrl) { 
+            thumb.style.backgroundImage = `url(${imageUrl})`; 
+            thumb.style.backgroundSize = 'cover'; 
+            thumb.textContent = ''; 
+        } else { 
+            thumb.textContent = (itemType === 'artist') ? '🎤' : (itemType === 'album' ? '💿' : '🎵'); 
+        }
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const t = document.createElement('div'); 
+        t.className = 'title'; 
+        t.textContent = item.name;
+
+        const s = document.createElement('div');
+        s.className = 'subtitle';
+        let subText = '';
+        if (itemType === 'track') {
+            const artists = (item.artists || []).map(a => a.name).join(', ');
+            subText = `${artists} · ${item.album?.name || '앨범 정보 없음'}`;
+        } else if (itemType === 'album') {
+            const artists = (item.artists || []).map(a => a.name).join(', ');
+            subText = `${item.album_type} · ${artists}`;
+        } else if (itemType === 'artist') {
+            subText = `${item.followers?.total.toLocaleString()} 팔로워`;
+        }
+        s.textContent = subText;
+
+        const chip = document.createElement('span'); 
+        chip.className = 'chip';
+        chip.textContent = itemType.charAt(0).toUpperCase() + itemType.slice(1); // Track, Album, Artist
+
+        meta.appendChild(t); 
+        meta.appendChild(s);
+        card.appendChild(thumb); 
+        card.appendChild(meta); 
+        card.appendChild(chip);
+        
+        return card;
+    }
+    
+    /**
+     * 검색된 항목 클릭 시 동작을 처리합니다.
+     */
+    async function handleSearchItemClick(item, itemType) {
+        if (itemType === 'track') {
+            // 트랙: 즉시 재생
+            const trackItem = item;
+            // 전역 함수 toQueueItem, playQueueIndex 사용
+            if (typeof toQueueItem !== 'function' || typeof playQueueIndex !== 'function') {
+                setError('플레이어 유틸리티 함수(toQueueItem/playQueueIndex)를 찾을 수 없습니다.');
+                return;
+            }
+            queue = [toQueueItem(trackItem)];
+            queueIndex = 0;
+            playQueueIndex(0, true);
+            setHint(`▶️ '${item.name}' 트랙을 YouTube에서 재생합니다.`);
+        } else if (itemType === 'album') {
+            // 앨범: 트랙 목록 보기
+            await loadAlbumTracks(item.id, item.name);
+        } else if (itemType === 'artist') {
+            // 아티스트: 인기 트랙 보기
+            await loadArtistTopTracks(item.id, item.name);
+        }
+    }
+    
+    /**
+     * 앨범 ID로 트랙 목록을 가져와 표시합니다.
+     */
+    async function loadAlbumTracks(albumId, albumName) {
+        try {
+            resultsListContainer.setAttribute('data-current-view', 'album-tracks');
+            // index.html의 setViewHeader 함수를 사용하여 제목을 설정합니다. (back button 포함)
+            if (typeof setViewHeader === 'function') {
+                setViewHeader(`앨범: <b>${albumName}</b>`, true); 
+            } else {
+                searchResultsTitleDiv.textContent = `앨범 트랙: ${albumName}`;
+            }
+            
+            setHint(`'${albumName}' 앨범의 트랙을 불러오는 중...`);
+            
+            const data = await spotify(`/albums/${albumId}/tracks`, { limit: 50 });
+            // 앨범 트랙은 'track' 객체를 직접 포함합니다.
+            const tracks = (data.items || []).filter(i => i.name);
+            
+            // 전역 renderList 함수를 사용하여 결과를 표시합니다. (유형: playlist-track)
+            if (typeof renderList === 'function') {
+                 renderList(tracks, 'playlist-track'); 
+            } else {
+                setError('renderList 함수를 찾을 수 없습니다.');
+                resultsListContainer.innerHTML = '';
+                return;
+            }
+
+            setHint(`'${albumName}' 앨범 (${tracks.length}곡) | 트랙을 누르면 YouTube에서 재생됩니다.`);
+
+        } catch(e) { 
+            setError('앨범 트랙 로드 오류: ' + e.message); 
+            setHint(''); 
+        }
     }
 
-    // 검색 페이지 로드 시 초기화
-    setupSearchListeners();
+    /**
+     * 아티스트 ID로 인기 트랙 목록을 가져와 표시합니다.
+     */
+    async function loadArtistTopTracks(artistId, artistName) {
+        try {
+            resultsListContainer.setAttribute('data-current-view', 'artist-tracks');
+            // index.html의 setViewHeader 함수를 사용하여 제목을 설정합니다.
+            if (typeof setViewHeader === 'function') {
+                setViewHeader(`아티스트: <b>${artistName}</b> (인기 트랙)`, true); 
+            } else {
+                searchResultsTitleDiv.textContent = `아티스트 인기 트랙: ${artistName}`;
+            }
+
+            setHint(`'${artistName}'의 인기 트랙을 불러오는 중...`);
+
+            // 인기 트랙 API (국가 코드를 KR로 지정)
+            const data = await spotify(`/artists/${artistId}/top-tracks`, { market: 'KR' });
+            const tracks = (data.tracks || []).filter(i => i.name);
+            
+            // 전역 renderList 함수를 사용하여 결과를 표시합니다. (유형: playlist-track)
+            if (typeof renderList === 'function') {
+                 renderList(tracks, 'playlist-track'); 
+            } else {
+                setError('renderList 함수를 찾을 수 없습니다.');
+                resultsListContainer.innerHTML = '';
+                return;
+            }
+            
+            setHint(`'${artistName}'의 인기 트랙 (${tracks.length}곡) | 트랙을 누르면 YouTube에서 재생됩니다.`);
+
+        } catch(e) { 
+            setError('아티스트 트랙 로드 오류: ' + e.message); 
+            setHint(''); 
+        }
+    }
+
+
+    // 초기 힌트 메시지 설정
+    setHint('곡, 아티스트, 앨범 등 다양한 항목을 검색해 보세요.');
 </script>
