@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA 앱 설치 안내</title>
+    <!-- Tailwind CSS CDN 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 기본 폰트 설정 및 배경 그라디언트 */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1f2937 0%, #000000 100%); /* 다크 그라디언트 배경 */
+            min-height: 100vh;
+        }
+        /* 버튼 그림자 효과 */
+        .btn-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06), 0 0 15px rgba(59, 130, 246, 0.7);
+        }
+    </style>
+    <!-- PWA를 위한 매니페스트 (실제 PWA 구현 시 필요) -->
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body class="flex items-center justify-center p-4">
+    <!-- 메인 컨테이너 -->
+    <div class="w-full max-w-md bg-gray-800 p-8 rounded-xl shadow-2xl text-white text-center">
+        
+        <!-- 아이콘 (PWA 느낌을 위해 칩 아이콘 사용) -->
+        <div class="text-blue-400 text-6xl mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M12 2v2"/><path d="M12 20v2"/><path d="M20 12h2"/><path d="M2 12h2"/><path d="M14.12 9.88a2.41 2.41 0 0 0-3.41 0l-1.59 1.59a.5.5 0 0 0 0 .7.5.5 0 0 0 .7 0l1.59-1.59a.41.41 0 0 1 .58 0 .41.41 0 0 1 0 .58l-1.59 1.59a2.41 2.41 0 0 0 0 3.41"/><circle cx="12" cy="12" r="7"/></svg>
+        </div>
+
+        <h1 class="text-3xl font-bold mb-3">
+            앱을 설치하여 사용해 보세요!
+        </h1>
+        <p class="text-gray-400 mb-8">
+            이 웹사이트를 당신의 홈 화면에 추가하여 앱처럼 사용하세요.
+        </p>
+
+        <!-- 1. PWA 설치 버튼 (초기에는 숨겨짐) -->
+        <button id="installButton" 
+                class="w-full mb-4 px-6 py-3 text-lg font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 btn-shadow hidden"
+                aria-label="PWA 앱 다운로드 및 설치">
+            앱 다운로드 (PWA 설치)
+        </button>
+
+        <!-- 2. 홈으로 이동 버튼 -->
+        <button id="homeButton" 
+                class="w-full px-6 py-3 text-lg font-semibold rounded-lg text-gray-300 bg-gray-700 hover:bg-gray-600 transition duration-200 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50"
+                aria-label="홈 페이지로 이동">
+            홈으로 이동
+        </button>
+
+    </div>
+
+    <script>
+        // PWA 설치 프롬프트 객체를 저장할 변수
+        let deferredPrompt;
+        const installButton = document.getElementById('installButton');
+        const homeButton = document.getElementById('homeButton');
+
+        /**
+         * beforeinstallprompt 이벤트 리스너: 
+         * 브라우저가 PWA 설치 프롬프트를 표시할 수 있을 때 발생합니다.
+         */
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // 기본 프롬프트 표시 방지
+            e.preventDefault();
+            
+            // 이벤트 객체를 저장하여 나중에 설치 버튼 클릭 시 사용
+            deferredPrompt = e;
+            
+            // 설치 버튼을 화면에 표시
+            installButton.classList.remove('hidden');
+            console.log('PWA 설치 프롬프트 준비 완료.');
+        });
+
+        /**
+         * 설치 버튼 클릭 이벤트 핸들러
+         */
+        installButton.addEventListener('click', async () => {
+            // 설치 프롬프트가 준비된 경우에만 실행
+            if (deferredPrompt) {
+                // 저장된 프롬프트를 호출하여 사용자에게 설치 대화 상자를 표시
+                deferredPrompt.prompt();
+                
+                // 사용자의 응답을 기다림
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                // 설치 성공 또는 취소 여부 콘솔에 기록
+                console.log(`사용자 설치 선택: ${outcome}`);
+                
+                // 설치 프롬프트는 한 번만 사용할 수 있으므로 다시 숨김
+                deferredPrompt = null;
+                installButton.classList.add('hidden');
+
+                // 사용자가 설치를 수락했다면 메시지 업데이트 (선택 사항)
+                if (outcome === 'accepted') {
+                    document.querySelector('h1').textContent = '설치가 시작되었습니다!';
+                    document.querySelector('p').textContent = '잠시 후 홈 화면에서 앱을 확인해 주세요.';
+                } else {
+                    document.querySelector('h1').textContent = '설치 취소됨';
+                    document.querySelector('p').textContent = '언제든 다시 시도할 수 있습니다.';
+                }
+            } else {
+                // deferredPrompt가 없으면 이미 설치되었거나 지원하지 않는 브라우저일 수 있음
+                alert('설치 기능을 사용할 수 없습니다. 브라우저 메뉴에서 "홈 화면에 추가"를 시도해 보세요.');
+            }
+        });
+
+        /**
+         * 홈으로 이동 버튼 클릭 이벤트 핸들러
+         * (이 예시에서는 최상위 경로로 이동합니다.)
+         */
+        homeButton.addEventListener('click', () => {
+            window.location.href = '/'; 
+            // 실제 웹사이트의 홈 URL로 변경해 주세요.
+        });
+
+        /**
+         * 앱이 이미 설치된 경우 버튼 처리
+         */
+        window.addEventListener('appinstalled', () => {
+            // 앱이 설치되면 버튼 숨김
+            installButton.classList.add('hidden');
+            deferredPrompt = null;
+            document.querySelector('h1').textContent = '앱이 성공적으로 설치되었습니다!';
+            document.querySelector('p').textContent = '이제 홈 화면에서 앱을 실행할 수 있습니다.';
+            console.log('PWA가 설치됨.');
+        });
+    </script>
+</body>
+</html>
