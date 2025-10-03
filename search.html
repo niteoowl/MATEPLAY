@@ -838,9 +838,7 @@
       }
   }
 
-  // SPA 환경에 맞춰 window.onload 대신 함수 호출로 변경
-  // window.onload = initApp; 
-  // SPA의 mount/render 시점에 맞게 직접 initApp()을 호출할 수 있도록 유지합니다.
-  initApp();
+  // 🚨 수정된 부분: DOM 및 모든 리소스 로드 후 initApp을 실행하여 JS 실행 타이밍 문제를 해결합니다.
+  window.addEventListener('load', initApp);
 
 </script>
