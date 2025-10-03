@@ -30,7 +30,14 @@
             display:flex; align-items:center; justify-content:space-between;
             padding:14px 16px; background:rgba(15,17,21,0.8); backdrop-filter: blur(10px); border-bottom:1px solid rgba(255,255,255,0.06);
         }
-        .brand{display:flex; align-items:center; font-weight:700; letter-spacing:0.2px}
+        /* 헤더 로고를 그라데이션 텍스트로 변경 */
+        .brand{
+            display:flex; align-items:center; font-weight:800; letter-spacing:0.5px; font-size:20px;
+            background: linear-gradient(135deg, #1ed760 0%, #1db954 50%, #17a34a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
         .auth-area { display: flex; align-items: center; gap: 12px; }
         .login-btn{
             appearance:none; border:none; outline:none; font-weight:700;
@@ -179,7 +186,7 @@
         .btn.primary{ background: white; color: black; font-size: 28px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .btn.primary:hover{ background: #e0e0e0; }
 
-        /* Now Playing View (NPV) Styles - Full Screen Player */
+        /* 전체 화면 플레이어 (Now Playing View) */
         .now-playing-view {
             position: fixed;
             top: 0;
@@ -394,8 +401,9 @@
 <div class="container" id="mainContainer">
 
     <div class="appbar">
+         그라데이션 텍스트 로고로 변경 
         <div class="brand">
-            <img src="https://i.postimg.cc/YCg2Zv0V/1.png" alt="Music Hub Logo" style="height:30px; border-radius:6px;">
+            🎵 Music Hub
         </div>
         
         <div class="auth-area">
@@ -434,13 +442,14 @@
         <div id="list" class="grid" role="list" data-current-view="playlists"></div>
     </div>
 
+     미니 플레이어 바 
     <div class="player-bar-container" id="playerBarContainer"> 
         <div id="progressBar"></div> 
         <div class="player">
             <div class="now">
                 <div id="nowThumb" class="thumb">🎵</div>
                 <div class="meta">
-                    <div id="nowTitle" class="title">트랙을 선택해 주세요</div>
+                    <div id="nowTitle" class="title">트랙을 선택하세요</div>
                     <div id="nowSubtitle" class="subtitle">—</div>
                 </div>
             </div>
@@ -453,6 +462,7 @@
         <div id="hiddenPlayerControls" class="hidden"></div>
     </div>
 
+     하단 내비게이션 바 
     <div class="nav-bar-container">
         <button id="navHome" class="nav-item active">
             <div class="icon-wrapper">
@@ -475,6 +485,7 @@
     </div>
 </div>
 
+ 전체 화면 재생기 (Now Playing View) 
 <div id="nowPlayingView" class="now-playing-view">
     <div class="npv-header">
         <button id="npvCloseBtn" class="npv-close-btn">
@@ -489,7 +500,7 @@
             <div id="npvAlbumArt">🎶</div>
         </div>
         <div class="npv-metadata">
-            <div id="npvTitle">트랙을 선택해 주세요</div>
+            <div id="npvTitle">트랙을 선택하세요</div>
             <div id="npvArtist">—</div>
         </div>
     </div>
@@ -519,7 +530,8 @@
     </div>
 </div>
 
-<div id="playlistSelectorModal" class="modal-overlay hidden">
+ 플레이리스트 선택 모달 
+<div id="playlistSelectorModal" class="modal-overlay">
     <div class="modal-content">
         <h3 class="text-xl font-bold mb-4" style="font-size:1.4em; font-weight:800; color:var(--text);">플레이리스트 선택</h3>
         <p class="text-muted text-sm mb-4" id="modalTrackInfo" style="color:var(--muted); font-size:0.9em;"></p>
@@ -529,11 +541,12 @@
                 <p style="font-size:0.8em; margin-top:8px;">플레이리스트 로드 중...</p>
             </div>
         </div>
-        <button id="closeModalBtn" class="login-btn mt-6 w-full !bg-gray-700 hover:!bg-gray-600 text-white !shadow-none !rounded-xl" style="margin-top:16px; width:100%; background:#374151; border-radius:12px;">닫기</button>
+        <button id="closeModalBtn" class="login-btn mt-6 w-full !bg-gray-700 hover:!bg-gray-600 text-white !shadow-none !rounded-xl" style="margin-top:16px; width:100%; background:#374151 !important; box-shadow:none !important;">닫기</button>
     </div>
 </div>
 
 
+ YouTube IFrame API & Application Logic 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -541,7 +554,7 @@
 
 
   // -------------------------
-  // 상수 및 상태
+  // 🔑 상수 및 상태 🔑
   // -------------------------
   const SPOTIFY_CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f'; 
   const SPOTIFY_REDIRECT_URI = 'https://play.nmate.kr/callback'; 
@@ -584,7 +597,7 @@
 
 
   // -------------------------
-  // 유틸리티 함수
+  // 🛠️ 유틸리티 함수 🛠️
   // -------------------------
   const $ = sel => document.querySelector(sel);
   const $$ = sel => document.querySelectorAll(sel);
@@ -602,12 +615,7 @@
   }
 
   const setHint = (msg) => {
-    // console.log("HINT:", msg);
-  }
-  
-  const showToast = (msg, type = 'info') => {
-    setError(msg);
-    setTimeout(() => setError(''), 3000);
+    console.log("[v0] HINT:", msg);
   }
   
   const generateRandomString = (length) => Array.from({length}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]).join('');
@@ -616,7 +624,7 @@
   const generateCodeChallenge = async (v) => base64urlencode(await sha256(v));
 
   // -------------------------
-  // 인증 및 상태 관리
+  // 🔐 인증 및 상태 관리 🔐
   // -------------------------
   
   const FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSyC2iRkFZUYZsVIbGzXcCLY1t4eBcfzvwzg", projectId: "mateplay-a" };
@@ -732,11 +740,9 @@
   }
 
   async function spotify(endpoint, params, options = {}){
-    // 토큰 존재 및 만료 검증
-    if(!accessToken || Date.now() >= expiresAt){ 
+    if(!accessToken || Date.now() > expiresAt){ 
         throw new Error('Spotify 인증이 만료되었습니다. 다시 연동해 주세요.'); 
     }
-    
     const url = new URL('https://api.spotify.com/v1' + endpoint);
     if(params) Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v)); 
     
@@ -763,7 +769,7 @@
   }
 
   // -------------------------
-  // YouTube API 캐싱 로직
+  // 🔥 YouTube API 캐싱 로직 🔥
   // -------------------------
   
   function getPathSegments(collectionName) {
@@ -818,7 +824,7 @@
   }
   
   // -------------------------
-  // 네비게이션 및 콘텐츠 로드
+  // 🧩 네비게이션 및 콘텐츠 로드 🧩
   // -------------------------
   
   function setViewHeader(htmlContent, showBackButton = false) {
@@ -1071,7 +1077,7 @@
             e.stopPropagation(); 
             const item = toQueueItem(it);
             queue.push(item);
-            showToast(`✅ 큐에 '${item.title.substring(0, 10)}...'을(를) 추가했습니다. (현재 ${queue.length}곡)`);
+            setError(`✅ 큐에 '${item.title.substring(0, 10)}...'을(를) 추가했습니다. (현재 ${queue.length}곡)`);
         });
         actions.appendChild(queueAddBtn);
         
@@ -1092,7 +1098,7 @@
   }
 
 
-  // 플레이리스트 모달 및 추가 기능
+  // ** 플레이리스트 모달 및 추가 기능 **
 
   async function loadPlaylists(render = true){
     if (!currentFirebaseUser || !accessToken) { 
@@ -1120,7 +1126,7 @@
 
   function showPlaylistSelector(trackUri, trackName) {
     if (!allPlaylistsLoaded || !userPlaylists.length) {
-        showToast(userPlaylists.length ? '플레이리스트를 로드 중입니다. 잠시 후 다시 시도해 주세요.' : '추가할 수 있는 플레이리스트가 없습니다.', 'error');
+        setError(userPlaylists.length ? '플레이리스트를 로드 중입니다. 잠시 후 다시 시도해 주세요.' : '추가할 수 있는 플레이리스트가 없습니다.');
         return;
     }
     
@@ -1135,9 +1141,6 @@
     userPlaylists.forEach(pl => {
         const btn = document.createElement('button');
         btn.className = 'dropdown-item text-left w-full flex justify-between items-center';
-        btn.style.display = 'flex';
-        btn.style.justifyContent = 'space-between';
-        btn.style.width = '100%';
         btn.innerHTML = `<span>${pl.name}</span><span style="color:var(--muted); font-size:0.8em; margin-left:10px;">${pl.tracks.total}곡</span>`;
         btn.addEventListener('click', () => {
             addTrackToPlaylist(pl.id, trackUri, pl.name, trackName);
@@ -1150,30 +1153,26 @@
   }
 
   async function addTrackToPlaylist(playlistId, trackUri, playlistName, trackName) {
-    // 토큰 존재 및 만료 검증
-    if (!accessToken || Date.now() >= expiresAt) { 
-        showToast('Spotify 인증이 만료되었습니다. 다시 연동해 주세요.', 'error'); 
+    if (!accessToken || Date.now() > expiresAt) { 
+        setError('Spotify 인증이 만료되었습니다. 다시 연동해 주세요.'); 
         return; 
     }
 
     try {
-        showToast(`'${trackName.substring(0, 15)}...'을(를) '${playlistName}'에 추가 중...`, 'info'); 
+        setError(`'${trackName.substring(0, 15)}...'을(를) '${playlistName}'에 추가 중...`); 
         
         await spotify(`/playlists/${playlistId}/tracks`, null, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({
                 uris: [trackUri],
                 position: 0 
             })
         });
         
-        showToast(`✅ '${trackName.substring(0, 15)}...'이(가) '${playlistName.substring(0, 15)}...'에 추가되었습니다.`, 'success');
+        setError(`✅ '${trackName.substring(0, 15)}...'이(가) '${playlistName.substring(0, 15)}...'에 추가되었습니다.`);
         
     } catch (e) {
-        showToast(`플레이리스트 추가 실패: ${e.message}`, 'error');
+        setError(`플레이리스트 추가 실패: ${e.message}`);
     }
   }
 
@@ -1220,6 +1219,7 @@
       
       if(type === 'playlist' && it.images?.[0]?.url){ imageUrl = it.images[0].url; }
       else if(type === 'playlist-track'){ 
+          trackItem = it;
           if(trackItem.album?.images?.[0]?.url) imageUrl = trackItem.album.images[0].url;
       }
       
@@ -1261,7 +1261,7 @@
             queueIndex = index;
             playQueueIndex(queueIndex, true); 
         } else {
-            const trackItem = item.track || item;
+            const trackItem = item;
             queue = [toQueueItem(trackItem)];
             queueIndex = 0;
             playQueueIndex(0, true);
@@ -1296,7 +1296,7 @@
   }
   
   // -------------------------
-  // 플레이어 로직
+  // 🎧 플레이어 로직 🎧
   // -------------------------
   
   function toQueueItem(t){
@@ -1328,37 +1328,60 @@
     }catch(e){ setError('YouTube 재생 오류: ' + e.message); }
   }
 
+  function setNowPlaying(it){
+    // 1. 미니 플레이어 업데이트
+    $('#nowTitle').textContent = it.title;
+    $('#nowSubtitle').textContent = it.artists || '—';
+    const miniThumb = $('#nowThumb');
+    if(it.image){ miniThumb.style.backgroundImage = `url(${it.image})`; miniThumb.style.backgroundSize = 'cover'; miniThumb.textContent = ''; }
+    else{ miniThumb.style.backgroundImage = ''; miniThumb.textContent = '🎵'; }
+
+    // 2. 전체 화면 플레이어 업데이트
+    $('#npvTitle').textContent = it.title;
+    $('#npvArtist').textContent = it.artists || '—';
+    const npvArt = $('#npvAlbumArt');
+    if(it.image){ npvArt.style.backgroundImage = `url(${it.image})`; npvArt.style.backgroundSize = 'cover'; npvArt.textContent = ''; }
+    else{ npvArt.style.backgroundImage = ''; npvArt.textContent = '🎶'; }
+
+    // 3. 큐 정보 업데이트
+    $('#npvQueueLengthText').textContent = `큐: ${queueIndex + 1}/${queue.length}곡`;
+
+    // 4. MediaSession API 업데이트 (백그라운드 재생 지원)
+    updateMediaSession(it);
+  }
+
   function updateMediaSession(trackInfo) {
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: trackInfo.title || '제목 없음',
         artist: trackInfo.artists || '알 수 없는 아티스트',
-        album: '재생 중',
+        album: 'Music Hub',
         artwork: trackInfo.image ? [
           { src: trackInfo.image, sizes: '96x96', type: 'image/jpeg' },
           { src: trackInfo.image, sizes: '128x128', type: 'image/jpeg' },
           { src: trackInfo.image, sizes: '192x192', type: 'image/jpeg' },
           { src: trackInfo.image, sizes: '256x256', type: 'image/jpeg' },
           { src: trackInfo.image, sizes: '384x384', type: 'image/jpeg' },
-          { src: trackInfo.image, sizes: '512x512', type: 'image/jpeg' }
+          { src: trackInfo.image, sizes: '512x512', type: 'image/jpeg' },
         ] : []
       });
 
+      // 액션 핸들러 설정
       navigator.mediaSession.setActionHandler('play', () => {
         if (ytPlayer) ytPlayer.playVideo();
       });
-
+      
       navigator.mediaSession.setActionHandler('pause', () => {
         if (ytPlayer) ytPlayer.pauseVideo();
       });
-
+      
       navigator.mediaSession.setActionHandler('previoustrack', () => {
         if (queueIndex > 0) {
           queueIndex--;
           playQueueIndex(queueIndex, true);
         }
       });
-
+      
       navigator.mediaSession.setActionHandler('nexttrack', () => {
         if (queueIndex < queue.length - 1) {
           queueIndex++;
@@ -1371,25 +1394,9 @@
           ytPlayer.seekTo(details.seekTime, true);
         }
       });
+
+      console.log('[v0] MediaSession API 업데이트 완료:', trackInfo.title);
     }
-  }
-
-  function setNowPlaying(it){
-    $('#nowTitle').textContent = it.title;
-    $('#nowSubtitle').textContent = it.artists || '—';
-    const miniThumb = $('#nowThumb');
-    if(it.image){ miniThumb.style.backgroundImage = `url(${it.image})`; miniThumb.style.backgroundSize = 'cover'; miniThumb.textContent = ''; }
-    else{ miniThumb.style.backgroundImage = ''; miniThumb.textContent = '🎵'; }
-
-    $('#npvTitle').textContent = it.title;
-    $('#npvArtist').textContent = it.artists || '—';
-    const npvArt = $('#npvAlbumArt');
-    if(it.image){ npvArt.style.backgroundImage = `url(${it.image})`; npvArt.style.backgroundSize = 'cover'; npvArt.textContent = ''; }
-    else{ npvArt.style.backgroundImage = ''; npvArt.textContent = '🎶'; }
-
-    $('#npvQueueLengthText').textContent = `큐: ${queueIndex + 1}/${queue.length}곡`;
-
-    updateMediaSession(it);
   }
 
   async function findYouTubeVideoId(q, spotifyTrackId) {
@@ -1477,7 +1484,13 @@
     }
     
     if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = (state === 1) ? 'playing' : 'paused';
+      if (state === 1) {
+        navigator.mediaSession.playbackState = 'playing';
+      } else if (state === 2) {
+        navigator.mediaSession.playbackState = 'paused';
+      } else {
+        navigator.mediaSession.playbackState = 'none';
+      }
     }
     
     if(state === 1){
@@ -1511,12 +1524,16 @@
           $('#npvQueueLengthText').textContent = `큐: ${queueIndex + 1}/${queue.length}곡`;
       }
 
-      if ('mediaSession' in navigator && d > 0) {
-        navigator.mediaSession.setPositionState({
-          duration: d,
-          playbackRate: 1.0,
-          position: c
-        });
+      if ('mediaSession' in navigator && 'setPositionState' in navigator.mediaSession) {
+        try {
+          navigator.mediaSession.setPositionState({
+            duration: d,
+            playbackRate: ytPlayer.getPlaybackRate() || 1.0,
+            position: c
+          });
+        } catch (e) {
+          console.error('[v0] MediaSession position state 업데이트 오류:', e);
+        }
       }
 
     }, 500);
@@ -1534,7 +1551,6 @@
 
   function setupPlayerControls() {
     const playerBarContainer = $('#playerBarContainer');
-    const playerDiv = playerBarContainer.querySelector('.player');
 
     playerBarContainer.addEventListener('click', (e) => {
         if (e.target.closest('#miniPlayPauseBtn')) return; 
@@ -1581,7 +1597,6 @@
         }
     });
 
-
     $('#firebaseLoginBtn').addEventListener('click', () => { if (!currentFirebaseUser) window.location.href = '/auth'; });
     const userChip = $('#userChip');
     const userDropdown = $('#userDropdown');
@@ -1597,7 +1612,7 @@
   }
 
   // -------------------------
-  // 애플리케이션 초기화
+  // 🚀 애플리케이션 초기화 🚀
   // -------------------------
 
   async function initApp() {
