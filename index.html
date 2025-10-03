@@ -74,12 +74,11 @@
         /* 레이아웃 */
         .container{ 
             display:grid; 
-            /* Appbar (58px), Content (1fr), Player (70px), Nav (65px) - Nav 높이 증가 */
+            /* Appbar (58px), Content (1fr), Player (70px), Nav (65px) */
             grid-template-rows:auto 1fr auto auto; 
             height:100%; 
         }
         .content{
-            /* 하단 내비게이션 바가 65px로 변경됨에 따라 높이 계산 조정 */
             height:calc(100vh - 58px - 70px - 65px); /* Appbar(58) + Player(70) + Nav(65) */
             padding:12px; 
             display:grid; grid-template-rows:auto auto 1fr; gap:0px; 
@@ -112,11 +111,32 @@
         .title{ font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .subtitle{ color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
         .chip{ font-size:11px; color:#a7b0c6; background:#22283a; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.06); }
+        
+        /* 🔥 검색창 스타일 개선 🔥 */
+        .search-wrapper {
+            display: flex; gap: 10px; padding: 12px 6px; 
+            position: sticky; top: 0; z-index: 1; 
+            background: linear-gradient(180deg, var(--bg) 80%, rgba(15,17,21,0)); /* 스크롤 시 아래가 투명하게 */
+        }
+        #searchInput {
+            flex-grow: 1; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--panel-2); 
+            background: var(--panel); color: var(--text); font-size: 16px; transition: all 0.2s;
+            outline: none; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        #searchInput:focus {
+            border-color: var(--accent); background: #222837; box-shadow: 0 0 0 3px #1ed76044, inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        #searchBtn {
+            flex-shrink: 0; width: 44px; height: 44px; 
+            background: var(--accent); color: #0a0d12; font-size: 18px; font-weight: 700;
+            border-radius: 12px; border: none; cursor: pointer; transition: opacity 0.15s, transform 0.15s;
+            box-shadow: 0 4px 15px rgba(30,215,96,0.4);
+        }
+        #searchBtn:hover { opacity: 0.9; transform: scale(1.05); }
+
         /* 플레이어 바 스타일 */
         .player-bar-container { 
-            position: fixed; /* 전역 고정 */
-            left: 0; right: 0; 
-            bottom: 65px; /* 내비게이션 바 높이(65px)만큼 위로 올림 */
+            position: fixed; left: 0; right: 0; bottom: 65px; 
             z-index: 100; box-shadow: 0 -4px 12px rgba(0,0,0,0.4); 
             transition: bottom 0.2s; 
         }
@@ -134,60 +154,41 @@
         .btn.primary:hover{ background: #e0e0e0; }
         .player-bar-container .time, .player-bar-container #seek { position:absolute; left:-9999px; } 
 
-        /* 🔥 개선된 하단 내비게이션 바 스타일 🔥 */
+        /* 하단 내비게이션 바 */
         .nav-bar-container {
-            position: fixed; 
-            left: 0; right: 0; 
-            bottom: 0; 
-            height: 65px; /* 높이 증가 */
-            z-index: 101; 
-            background: #000000; /* 완전 검은색으로 변경 */
-            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.8); /* 강한 상단 그림자 */
-            display: flex; 
-            justify-content: space-around;
-            align-items: center;
-            padding-bottom: 5px; /* 하단 패딩 */
+            position: fixed; left: 0; right: 0; bottom: 0; height: 65px; z-index: 101; 
+            background: #000000; box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.8); 
+            display: flex; justify-content: space-around; align-items: center; padding-bottom: 5px;
         }
         .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; width: 33.33%; height: 100%;
-            cursor: pointer; color: var(--muted); transition: color 0.3s ease, transform 0.1s;
-            font-size: 10px; /* 폰트 사이즈 살짝 줄임 */
-            font-weight: 600; text-align: center;
-            border: none; background: none; /* 버튼 기본 스타일 제거 */
-            padding: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            width: 33.33%; height: 100%; cursor: pointer; color: var(--muted); transition: color 0.3s ease, transform 0.1s;
+            font-size: 10px; font-weight: 600; text-align: center; border: none; background: none; padding: 0;
         }
         .nav-item:hover { color: var(--text); }
+        .nav-item .icon-wrapper { position: relative; display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 2px; transition: all 0.3s ease; }
+        .nav-item i { font-size: 20px; z-index: 2; transition: color 0.3s ease; }
+        .nav-item.active { color: var(--text); }
+        .nav-item.active .icon-wrapper { background: #1ed76025; border-radius: 999px; box-shadow: 0 0 10px rgba(30, 215, 96, 0.2); }
+        .nav-item.active i { color: var(--accent); }
 
-        .nav-item .icon-wrapper {
-            position: relative;
-            display: grid;
-            place-items: center;
-            width: 38px;
-            height: 38px;
-            margin-bottom: 2px;
-            transition: all 0.3s ease;
+        /* 모달 스타일 */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(0, 0, 0, 0.7); z-index: 200; 
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s;
         }
-        
-        .nav-item i {
-            font-size: 20px;
-            z-index: 2;
-            transition: color 0.3s ease;
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: var(--panel); border-radius: 16px; padding: 20px; 
+            width: 90%; max-width: 400px; max-height: 80vh; 
+            box-shadow: var(--shadow); transform: translateY(20px); transition: transform 0.2s;
         }
-
-        /* 활성 상태 */
-        .nav-item.active {
-            color: var(--text); 
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        #playlistListContainer {
+            border: 1px solid var(--panel-2); border-radius: 10px;
         }
-        .nav-item.active .icon-wrapper {
-            background: #1ed76025; /* Subtle green background */
-            border-radius: 999px; /* Pill shape */
-            box-shadow: 0 0 10px rgba(30, 215, 96, 0.2);
-        }
-        .nav-item.active i {
-            color: var(--accent); /* Active icon color */
-        }
-
         /* 유틸 */
         .hidden{ display:none !important }
         .err{ color:var(--danger); font-size:12px; margin:8px 6px 0 }
@@ -236,7 +237,6 @@
         </div>
 
         <div id="errorBox" class="err hidden"></div>
-        <!-- 안내 메시지(HintBox)는 배포용으로 삭제됨 -->
         
         <div id="currentViewHeader" class="section-title hidden"></div>
 
@@ -301,9 +301,25 @@
     </div>
 </div>
 
+<!-- 플레이리스트 선택 모달 -->
+<div id="playlistSelectorModal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 class="text-xl font-bold mb-4" style="font-size:1.4em; font-weight:800; color:var(--text);">플레이리스트 선택</h3>
+        <p class="text-muted text-sm mb-4" id="modalTrackInfo" style="color:var(--muted); font-size:0.9em;"></p>
+        <div id="playlistListContainer" class="max-h-60 overflow-y-auto" style="max-height: 240px; overflow-y: auto; border: 1px solid var(--panel-2); border-radius: 10px;">
+            <!-- Playlists will be injected here -->
+            <div style="text-align:center; padding: 20px; color:var(--accent);">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p style="font-size:0.8em; margin-top:8px;">플레이리스트 로드 중...</p>
+            </div>
+        </div>
+        <button id="closeModalBtn" class="login-btn mt-6 w-full !bg-gray-700 hover:!bg-gray-600 text-white !shadow-none !rounded-xl">닫기</button>
+    </div>
+</div>
+
+
 <!-- YouTube IFrame API & Application Logic -->
 <script type="module">
-  // 🔥🔥🔥 API 할당량 절약을 위한 Firestore 모듈 임포트 추가 🔥🔥🔥
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -341,6 +357,12 @@
   let auth;
   let db; // Firestore 인스턴스
 
+  // ** 플레이리스트 추가 기능 관련 상태 **
+  let userPlaylists = []; // Array of {id, name, owner, tracks}
+  let allPlaylistsLoaded = false;
+  let currentTrackUri = null; // URI of the track being added
+  let currentTrackName = null;
+  
   // ** 메인 페이지 상태 관리 변수 **
   let currentPageView = 'home'; // 'home', 'search', 'library'
   let currentHomeTab = 'playlists'; // 'playlists', 'liked', 'rec' (Home 페이지 내부 탭)
@@ -364,6 +386,7 @@
     const box = $('#errorBox');
     box.textContent = msg || '';
     box.classList.toggle('hidden', !msg);
+    if(msg) console.error("APP ERROR:", msg);
   }
 
   /**
@@ -391,13 +414,17 @@
     try {
         const app = initializeApp(FIREBASE_CONFIG);
         auth = getAuth(app);
-        db = getFirestore(app); // 🔥 Firestore 초기화
+        db = getFirestore(app); 
         
         if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken).catch(() => setError("자동 로그인 실패.")); 
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             currentFirebaseUser = user;
             updateFirebaseAuthUI(user);
             // 인증 상태가 바뀌면 현재 페이지를 다시 로드하여 데이터 로딩을 트리거
+            // Spotify 인증이 완료되었으면 플레이리스트를 미리 로드 (렌더링은 X)
+            if (user && accessToken) {
+                await loadPlaylists(false); 
+            }
             navigateTo(currentPageView); 
         });
     } catch(e) { setError('Firebase 초기화 실패: ' + e.message); }
@@ -452,7 +479,7 @@
     authUrl.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
     authUrl.searchParams.set('response_type', 'code'); 
     authUrl.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
-    authUrl.searchParams.set('scope', SPOTIFY_SCOPES); // ✨ 업데이트된 SCOPES 사용
+    authUrl.searchParams.set('scope', SPOTIFY_SCOPES); 
     authUrl.searchParams.set('code_challenge_method', 'S256'); 
     authUrl.searchParams.set('code_challenge', codeChallenge); 
     authUrl.searchParams.set('show_dialog', 'true');
@@ -475,8 +502,8 @@
             spotifyDisplayName = me.display_name || me.id;
             spotifyProfileImage = me.images?.[0]?.url || ''; 
             updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
+            await loadPlaylists(false); // 🔥 플레이리스트를 미리 로드 (모달용)
         } catch(e) { updateSpotifyAuthUI(true); }
-        // Spotify auth 성공 후, Home 페이지의 현재 탭을 로드
         if (currentPageView === 'home') loadHomeContent(currentHomeTab);
         return true;
     }
@@ -487,19 +514,37 @@
     accessToken = null; expiresAt = 0;
     spotifyDisplayName = '';
     spotifyProfileImage = '';
+    userPlaylists = []; // 플레이리스트 데이터 초기화
+    allPlaylistsLoaded = false;
     updateSpotifyAuthUI(false); 
     if (currentPageView === 'home') loadHomeContent(currentHomeTab);
   }
 
-  async function spotify(endpoint, params){
+  // Spotify API 헬퍼 함수 (GET, POST 요청 처리 가능하도록 업데이트)
+  async function spotify(endpoint, params, options = {}){
     if(!accessToken || Date.now() > expiresAt){ throw new Error('Spotify 인증이 만료되었습니다. 다시 연동해 주세요.'); }
     const url = new URL('https://api.spotify.com/v1' + endpoint);
     if(params) Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v)); 
-    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+    
+    const defaultHeaders = { Authorization: 'Bearer ' + accessToken };
+    
+    if (options.body && !options.headers?.['Content-Type']) {
+        defaultHeaders['Content-Type'] = 'application/json';
+    }
+    
+    const res = await fetch(url, { 
+        ...options,
+        headers: {
+            ...defaultHeaders,
+            ...options.headers 
+        } 
+    });
+    
     if(!res.ok){
       const t = await res.text().catch(()=> '');
       throw new Error(`Spotify 오류: ${res.status} ${t.substring(0, 100) || res.statusText}`);
     }
+    if (res.status === 204) return {}; 
     return res.json();
   }
 
@@ -567,7 +612,6 @@
           backBtn.style.fontSize = '18px';
           
           backBtn.addEventListener('click', () => { 
-              // 플레이리스트 상세 뷰에서 돌아가면 Home 탭의 'playlists' 뷰로 돌아감
               currentHomeTab = 'playlists';
               loadHomeContent('playlists'); 
           });
@@ -581,7 +625,6 @@
   }
 
   function setHomeTabs(key){
-    // 상단 탭 (데스크톱/Home 페이지용) 활성 상태 업데이트
     currentHomeTab = key;
     $$('.pill').forEach(p => p.classList.remove('active'));
     if(key === 'playlists') $('#tabPlaylists').classList.add('active');
@@ -594,7 +637,6 @@
 
   function loadHomeContent(tabKey) {
       if (!currentFirebaseUser || !accessToken) { 
-          // setHint('Spotify 연동을 완료해야 플레이리스트를 볼 수 있습니다.'); // 삭제됨
           $('#list').innerHTML = `<div class="hint" style="margin:20px; padding:12px; background:var(--panel-2); border-radius:10px; color:var(--muted); text-align:center;">
               <i class="fas fa-lock" style="margin-right:8px; color:var(--danger);"></i>
               Firebase 로그인 및 Spotify 연동을 완료해 주세요.
@@ -605,17 +647,14 @@
       setHomeTabs(tabKey);
       $('#list').setAttribute('data-current-view', tabKey);
       
-      if (tabKey === 'playlists') loadPlaylists();
+      if (tabKey === 'playlists') loadPlaylists(true); // 렌더링 포함
       else if (tabKey === 'liked') loadLiked();
       else if (tabKey === 'rec') loadRecommendations();
   }
 
-  /**
-   * 외부 HTML 파일을 로드하여 #list 컨테이너에 삽입합니다. (SPA 페이지 전환)
-   */
   async function loadExternalPage(path, title) {
+    // ... (loadExternalPage 로직은 변경 없음)
     const listContainer = $('#list');
-    // 로딩 인디케이터 표시
     listContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">콘텐츠 로드 중...</p></div>`;
     setViewHeader(title, false);
     setError('');
@@ -629,40 +668,32 @@
 
         const htmlContent = await response.text();
         
-        // 1. DOMParser를 사용하여 HTML 콘텐츠를 DOM Fragment로 변환
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlContent, 'text/html');
-        // body 콘텐츠를 가져오거나, 없다면 전체 문서의 내용을 사용
         const fragment = doc.body || doc.documentElement;
 
-        // 기존 콘텐츠를 제거합니다.
         listContainer.innerHTML = '';
         
         const scriptsToExecute = [];
         const contentFragment = document.createDocumentFragment();
 
-        // 2. 스크립트 태그를 찾고 분리하며, 나머지는 contentFragment로 이동
         let child = fragment.firstChild;
         while (child) {
             const nextChild = child.nextSibling;
             
             if (child.nodeType === 1 && child.tagName === 'SCRIPT') {
-                // 스크립트 노드의 정보(src 또는 내용)를 저장합니다.
                 scriptsToExecute.push({ 
                     src: child.getAttribute('src'), 
                     textContent: child.textContent 
                 });
             } else {
-                // 스크립트가 아닌 노드는 contentFragment로 이동 (원본 Fragment에서 제거됨)
                 contentFragment.appendChild(child);
             }
-            child = nextChild; // 다음 노드로 이동
+            child = nextChild; 
         }
         
-        // 3. 스크립트가 제거된 나머지 HTML 콘텐츠를 삽입합니다.
         listContainer.appendChild(contentFragment);
 
-        // 4. 추출된 스크립트를 새로 생성하여 실행합니다. (스크립트 실행 보장)
         scriptsToExecute.forEach(scriptData => {
             const newScript = document.createElement('script');
             if (scriptData.src) {
@@ -670,13 +701,11 @@
             } else if (scriptData.textContent) {
                 newScript.textContent = scriptData.textContent;
             }
-            newScript.type = 'text/javascript'; // 타입 지정
-            // DOM에 추가될 때 실행됩니다.
+            newScript.type = 'text/javascript'; 
             listContainer.appendChild(newScript);
         });
 
     } catch (e) {
-        // 파일이 없거나 접근이 거부되는 경우 에러 처리
         listContainer.innerHTML = `<div style="text-align:center; padding: 40px; border:1px solid var(--danger); border-radius:12px; margin:20px 0;"><p style="color:var(--danger); font-weight:700; font-size:1.1em;">페이지 로드 오류: ${title}</p><p class="text-sm mt-2" style="color:var(--muted);">페이지 파일(${path})에 접근할 수 없습니다. (에러: ${e.message})</p><p class="text-sm mt-1" style="color:var(--muted);">파일을 생성하거나 경로를 확인해 주세요.</p></div>`;
         setError(`페이지 로드 오류: ${title}`);
     }
@@ -684,28 +713,21 @@
 
   function navigateTo(view) {
     currentPageView = view;
-    // 1. 하단 내비게이션 활성 상태 업데이트
     $$('.nav-item').forEach(btn => btn.classList.remove('active'));
     $(`#nav${view.charAt(0).toUpperCase() + view.slice(1)}`).classList.add('active');
 
-    // 2. 상단 탭 (Home용) 표시/숨김
     $$('.controls .pill').forEach(p => p.classList.toggle('hidden', view !== 'home'));
     
-    // 3. 뷰에 따라 콘텐츠 로드
     if (view === 'home') {
-        // Home 뷰는 내부 탭(playlists, liked 등)을 사용
         setHomeTabs(currentHomeTab);
         loadHomeContent(currentHomeTab);
     } else if (view === 'search') {
-        // Search 뷰는 직접 렌더링
         renderSearchPage();
     } else if (view === 'library') {
-        // Library 뷰는 외부 파일을 로드
         loadExternalPage('my.html', '나의 보관함');
     }
   }
 
-  // ✨ 신규: Spotify 트랙 검색 페이지 렌더링
   function renderSearchPage() {
     setViewHeader('Spotify 트랙 검색', false);
 
@@ -722,15 +744,13 @@
     }
 
     const searchWrapper = document.createElement('div');
-    searchWrapper.className = 'flex gap-2 p-2 sticky top-0 z-10'; // 검색 바 고정
-    searchWrapper.style.backgroundColor = 'var(--panel)'; // 배경색 설정
+    searchWrapper.className = 'search-wrapper'; 
 
     searchWrapper.innerHTML = `
-        <input type="text" id="searchInput" placeholder="검색어 입력..." 
-               class="flex-grow p-3 rounded-xl border border-gray-700 bg-gray-900 text-white focus:ring-2 focus:ring-accent focus:border-accent transition"
-               style="outline:none; border-color:var(--panel-2); font-size:16px;">
-        <button id="searchBtn" 
-                class="bg-accent text-black font-bold p-3 rounded-xl hover:opacity-90 transition transform hover:scale-[1.02]">
+        <input type="text" id="searchInput" placeholder="아티스트, 트랙, 앨범 검색..." 
+               class="" 
+               autofocus>
+        <button id="searchBtn" title="검색 실행">
             <i class="fas fa-search"></i>
         </button>
     `;
@@ -739,10 +759,9 @@
     const resultsContainer = document.createElement('div');
     resultsContainer.id = 'searchResults';
     resultsContainer.className = 'mt-2 p-1';
-    resultsContainer.innerHTML = '<div class="hint" style="margin:12px; color:var(--muted);">검색어를 입력하고 버튼을 눌러 트랙을 찾아보세요.</div>';
+    resultsContainer.innerHTML = '<div class="hint" style="margin:12px; color:var(--muted); text-align:center;">찾고 싶은 노래의 제목이나 아티스트 이름을 입력해 보세요.</div>';
     listContainer.appendChild(resultsContainer);
 
-    // Event Listeners for Search
     const searchInput = $('#searchInput');
     const searchBtn = $('#searchBtn');
 
@@ -755,7 +774,7 @@
 
   async function handleSearch(query) {
     if (!query.trim()) {
-        $('#searchResults').innerHTML = '<div class="hint" style="margin:12px; color:var(--muted);">검색어를 입력해 주세요.</div>';
+        $('#searchResults').innerHTML = '<div class="hint" style="margin:12px; color:var(--muted); text-align:center;">검색어를 입력해 주세요.</div>';
         return;
     }
     if (!accessToken) {
@@ -766,7 +785,7 @@
     const resultsContainer = $('#searchResults');
     resultsContainer.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--accent);">
         <i class="fas fa-spinner fa-spin fa-2x"></i>
-        <p class="mt-4 text-sm">"${query}" 검색 중...</p>
+        <p class="mt-4" style="font-size:0.9em;">"${query.substring(0, 30)}..." 검색 중...</p>
     </div>`;
 
     try {
@@ -783,14 +802,14 @@
     const root = $('#searchResults');
     root.innerHTML = '';
     if (!tracks || tracks.length === 0) {
-        root.innerHTML = '<div class="hint" style="margin:12px; color:var(--muted);">검색 결과가 없습니다.</div>';
+        root.innerHTML = '<div class="hint" style="margin:12px; color:var(--muted); text-align:center;">검색 결과가 없습니다.</div>';
         return;
     }
     
     const frag = document.createDocumentFragment();
     tracks.forEach((it) => {
         const card = document.createElement('div');
-        // 검색 결과는 기본 card 스타일을 재사용하되, 버튼 액션을 위해 flex-wrap 허용
+        // 검색 결과 카드: 정보와 액션 버튼을 수직/수평으로 배치
         card.className = 'card flex-col sm:flex-row items-start sm:items-center justify-between !gap-4'; 
         card.style.padding = '14px'; 
         card.style.cursor = 'default'; 
@@ -834,45 +853,151 @@
         actions.appendChild(playBtn);
         
         // 2. 큐에 추가 
-        const addBtn = document.createElement('button');
-        addBtn.className = 'login-btn !text-sm !p-2 !rounded-lg !shadow-none bg-gray-700 text-white hover:bg-gray-600';
-        addBtn.innerHTML = '<i class="fas fa-plus" style="margin-right:4px;"></i> 큐에 추가';
-        addBtn.addEventListener('click', () => {
+        const queueAddBtn = document.createElement('button');
+        queueAddBtn.className = 'login-btn !text-sm !p-2 !rounded-lg !shadow-none bg-gray-700 text-white hover:bg-gray-600';
+        queueAddBtn.innerHTML = '<i class="fas fa-plus" style="margin-right:4px;"></i> 큐에 추가';
+        queueAddBtn.addEventListener('click', () => {
             const item = toQueueItem(it);
             queue.push(item);
-            // setHint(`✅ 큐에 '${item.title}'을(를) 추가했습니다. (현재 큐 항목: ${queue.length}개)`); // 삭제됨
+            setError(`✅ 큐에 '${item.title.substring(0, 10)}...'을(를) 추가했습니다. (현재 ${queue.length}곡)`);
         });
-        actions.appendChild(addBtn);
+        actions.appendChild(queueAddBtn);
+        
+        // 3. 플레이리스트에 추가 버튼 (신규 기능)
+        const playlistAddBtn = document.createElement('button');
+        playlistAddBtn.className = 'login-btn !text-sm !p-2 !rounded-lg !shadow-none !bg-indigo-700 text-white hover:!bg-indigo-600';
+        playlistAddBtn.innerHTML = '<i class="fas fa-list-ul" style="margin-right:4px;"></i> 목록 추가';
+        playlistAddBtn.addEventListener('click', () => { 
+            showPlaylistSelector(it.uri, it.name);
+        });
+        actions.appendChild(playlistAddBtn);
+
 
         card.appendChild(actions);
         frag.appendChild(card);
     });
     root.appendChild(frag);
-    // setHint(`${tracks.length}개의 트랙을 찾았습니다. 트랙을 재생하거나 큐에 추가할 수 있습니다.`); // 삭제됨
   }
 
 
+  // ** 플레이리스트 모달 및 추가 기능 **
+
+  /**
+   * 플레이리스트 목록을 로드하고, 선택적으로 렌더링합니다. (모달에서 재사용을 위해 분리)
+   */
+  async function loadPlaylists(render = true){
+    if (!currentFirebaseUser || !accessToken) { 
+        if(render) $('#list').innerHTML = ''; // 인증 안되면 홈 렌더링 중지
+        return; 
+    }
+    
+    // 렌더링을 해야 하는 경우 (Home 탭)
+    if(render && !userPlaylists.length) {
+        $('#list').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">플레이리스트 로드 중...</p></div>`;
+    }
+
+    try{
+      const data = await spotify('/me/playlists', { limit: 50 });
+      userPlaylists = data.items || [];
+      allPlaylistsLoaded = true;
+      if(render) renderList(userPlaylists, 'playlist');
+
+    }catch(e){ 
+        setError('플레이리스트 로드 오류: ' + e.message); 
+        userPlaylists = [];
+        allPlaylistsLoaded = false;
+        if(render) $('#list').innerHTML = `<div class="hint" style="margin:12px; color:var(--danger); text-align:center;">플레이리스트 로드 중 오류가 발생했습니다.</div>`;
+    }
+  }
+
+
+  /**
+   * 플레이리스트 선택 모달을 표시하고 목록을 렌더링합니다.
+   */
+  function showPlaylistSelector(trackUri, trackName) {
+    if (!allPlaylistsLoaded || !userPlaylists.length) {
+        setError(userPlaylists.length ? '플레이리스트를 로드 중입니다. 잠시 후 다시 시도해 주세요.' : '추가할 수 있는 플레이리스트가 없습니다.');
+        return;
+    }
+    
+    currentTrackUri = trackUri;
+    currentTrackName = trackName;
+    
+    // 모달 텍스트 업데이트
+    $('#modalTrackInfo').textContent = `트랙: "${trackName.substring(0, 30)}${trackName.length > 30 ? '...' : ''}"`;
+
+    const container = $('#playlistListContainer');
+    container.innerHTML = '';
+    
+    userPlaylists.forEach(pl => {
+        const btn = document.createElement('button');
+        btn.className = 'dropdown-item text-left w-full flex justify-between items-center';
+        btn.innerHTML = `<span>${pl.name}</span><span style="color:var(--muted); font-size:0.8em; margin-left:10px;">${pl.tracks.total}곡</span>`;
+        btn.addEventListener('click', () => {
+            addTrackToPlaylist(pl.id, trackUri, pl.name, trackName);
+            $('#playlistSelectorModal').classList.remove('active');
+        });
+        container.appendChild(btn);
+    });
+
+    $('#playlistSelectorModal').classList.add('active');
+  }
+
+  /**
+   * Spotify API를 호출하여 플레이리스트에 트랙을 추가합니다.
+   */
+  async function addTrackToPlaylist(playlistId, trackUri, playlistName, trackName) {
+    if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
+
+    try {
+        setError(`'${trackName.substring(0, 15)}...'을(를) '${playlistName}'에 추가 중...`); 
+        
+        await spotify(`/playlists/${playlistId}/tracks`, null, {
+            method: 'POST',
+            body: JSON.stringify({
+                uris: [trackUri],
+                position: 0 
+            })
+        });
+        
+        setError(`✅ '${trackName.substring(0, 15)}...'이(가) '${playlistName.substring(0, 15)}...'에 추가되었습니다.`);
+        
+    } catch (e) {
+        setError(`플레이리스트 추가 실패: ${e.message}`);
+    }
+  }
+
+  // 모달 닫기 리스너 설정
+  $('#closeModalBtn').addEventListener('click', () => {
+      $('#playlistSelectorModal').classList.remove('active');
+  });
+  // 모달 외부 클릭 시 닫기
+  $('#playlistSelectorModal').addEventListener('click', (e) => {
+      if (e.target.id === 'playlistSelectorModal') {
+          $('#playlistSelectorModal').classList.remove('active');
+      }
+  });
+
+
+  // ** 기존 로직 **
   async function loadPlaylistTracks(plId, plName){
     if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
     try{
         $('#list').setAttribute('data-current-view', 'playlist-tracks');
         setViewHeader(`플레이리스트: <b>${plName}</b>`, true); 
-        // setHint(`'${plName}'의 트랙을 불러오는 중...`); // 삭제됨
         const data = await spotify(`/playlists/${plId}/tracks`, { limit: 100 });
         const tracks = (data.items||[]).filter(i => i.track && i.track.name).map(i => i.track);
         renderList(tracks, 'playlist-track'); 
-        // setHint(`'${plName}' (${tracks.length}곡) | 트랙을 누르면 YouTube에서 재생됩니다.`); // 삭제됨
     }catch(e){ setError('플레이리스트 트랙 로드 오류: ' + e.message); }
   }
 
   function renderList(items, type){
     const root = $('#list');
     root.innerHTML = '';
-    if(!items || !items.length){ root.innerHTML = `<div class="hint" style="margin:12px; color:var(--muted);">항목이 비어 있습니다.</div>`; return; }
+    if(!items || !items.length){ root.innerHTML = `<div class="hint" style="margin:12px; color:var(--muted); text-align:center;">항목이 비어 있습니다.</div>`; return; }
     const frag = document.createDocumentFragment();
     items.forEach((it) => {
       const card = document.createElement('div');
-      // Home 뷰의 카드는 클릭 시 액션이 있음
       card.className = 'card';
       card.addEventListener('click', () => onItemClick(it, type));
 
@@ -914,7 +1039,6 @@
     try{
       if(type === 'playlist'){ loadPlaylistTracks(item.id, item.name); } 
       else if (type === 'playlist-track') {
-        // Home 뷰의 트랙을 클릭하면 즉시 재생
         const trackItem = item.track || item;
         queue = [toQueueItem(trackItem)];
         queueIndex = 0;
@@ -923,29 +1047,21 @@
     }catch(e){ setError(e.message); }
   }
   
-  async function loadPlaylists(){
-    if (!currentFirebaseUser || !accessToken) { setError('Firebase 및 Spotify 인증이 필요합니다.'); $('#list').innerHTML = ''; return; }
-    try{
-      // setHint('플레이리스트를 불러오는 중…'); // 삭제됨
-      const data = await spotify('/me/playlists', { limit: 50 });
-      renderList(data.items || [], 'playlist');
-      // setHint(`${spotifyDisplayName || '사용자'}님의 플레이리스트 | 클릭하여 상세 트랙 보기`); // 삭제됨
-    }catch(e){ setError('플레이리스트 로드 오류: ' + e.message); }
-  }
+  // loadPlaylists는 위에 업데이트됨. Home 뷰에서만 render: true
+  
   async function loadLiked(){
     if (!currentFirebaseUser || !accessToken) { setError('Firebase 및 Spotify 인증이 필요합니다.'); $('#list').innerHTML = ''; return; }
     try{
-      // setHint('좋아요한 트랙을 불러오는 중…'); // 삭제됨
+      $('#list').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">좋아요한 트랙 로드 중...</p></div>`;
       const data = await spotify('/me/tracks', { limit: 50 });
       const tracks = (data.items || []).map(it => it.track).filter(Boolean);
       renderList(tracks, 'playlist-track'); 
-      // setHint('좋아요한 트랙 | 클릭하여 YouTube에서 재생'); // 삭제됨
     }catch(e){ setError('좋아요한 트랙 로드 오류: ' + e.message); }
   }
   async function loadRecommendations(){
     if (!currentFirebaseUser || !accessToken) { setError('Firebase 및 Spotify 인증이 필요합니다.'); $('#list').innerHTML = ''; return; }
     try{
-      // setHint('추천 트랙을 불러오는 중…'); // 삭제됨
+      $('#list').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">추천 트랙 로드 중...</p></div>`;
       const saved = await spotify('/me/tracks', { limit: 5 });
       const seedArtists = new Set(), seedTracks = [];
       (saved.items || []).forEach(it => { const t = it.track; if(t) { if(t.artists?.[0]?.id) seedArtists.add(t.artists[0].id); if(t.id) seedTracks.push(t.id); }});
@@ -955,7 +1071,6 @@
       if(!params.seed_artists && !params.seed_tracks){ params.seed_genres = 'pop'; }
       const rec = await spotify('/recommendations', Object.assign({ limit: 30 }, params));
       renderList(rec.tracks || [], 'playlist-track'); 
-      // setHint('맞춤형 추천 | 클릭하여 YouTube에서 재생'); // 삭제됨
     }catch(e){ setError('추천 트랙 로드 오류: ' + e.message); }
   }
   
@@ -969,7 +1084,6 @@
     const query = `${title} ${artists} audio`;
     const image = t.album?.images?.[0]?.url || '';
     const id = t.id; // Spotify Track ID
-    // 큐 항목에 Spotify ID를 추가하여 캐시 키로 사용합니다.
     return { title, artists, query, image, id }; 
   }
 
@@ -978,7 +1092,6 @@
     const it = queue[idx];
     setNowPlaying(it);
     try{
-      // 캐시 로직이 통합된 새로운 함수 호출
       const vid = await findYouTubeVideoId(it.query, it.id); 
       if(!vid){ setError('YouTube 검색 결과가 없습니다.'); return; }
       ensureYTPlayer();
@@ -1001,19 +1114,14 @@
     else{ n.style.backgroundImage = ''; n.textContent = '🎵'; }
   }
 
-  /**
-   * YouTube API 호출 대신 캐시를 먼저 확인하는 로직
-   */
   async function findYouTubeVideoId(q, spotifyTrackId) {
     if (spotifyTrackId) {
         const cachedId = await getCachedVideoId(spotifyTrackId);
         if (cachedId) {
-            // setHint(`✅ 캐시된 YouTube Video ID 사용 (Quota 절약)`); // 삭제됨
             return cachedId;
         }
     }
 
-    // setHint(`🔍 YouTube API로 '${q.substring(0, 30)}...' 검색 중 (Quota 사용)`); // 삭제됨
     const url = new URL('https://www.googleapis.com/youtube/v3/search');
     url.searchParams.set('part','snippet'); url.searchParams.set('q', q);
     url.searchParams.set('type','video'); url.searchParams.set('videoCategoryId','10'); 
@@ -1039,7 +1147,6 @@
 
     if (videoId && spotifyTrackId) {
         await saveCachedVideoId(spotifyTrackId, videoId);
-        // setHint(`✅ YouTube Video ID 캐시 저장 완료 (다음번 Quota 절약)`); // 삭제됨
     }
     
     return videoId;
