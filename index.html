@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -800,13 +801,10 @@
             currentFirebaseUser = user;
             updateFirebaseAuthUI(user);
             
+            //  Load tokens from Firestore on auth state change
             if (user) {
                 await loadTokensFromFirestore();
                 if (accessToken) {
-                    // Check if token needs refresh
-                    if (Date.now() > expiresAt - 60000 && refreshToken) {
-                        await refreshSpotifyToken();
-                    }
                     await loadPlaylists(false); 
                 }
             }
@@ -816,25 +814,21 @@
     } catch(e) { setError('Firebase 초기화 실패: ' + e.message); }
   }
   
+  //  Firestore token persistence functions
   async function saveTokensToFirestore(access, refresh, expires) {
-    if (!currentFirebaseUser || !db) {
-        console.warn('[v0] Cannot save tokens: user not logged in or Firestore not initialized');
-        return;
-    }
+    if (!currentFirebaseUser || !db) return;
     
     try {
         const userDocRef = doc(db, 'users', currentFirebaseUser.uid);
         await setDoc(userDocRef, {
             spotify_access_token: access,
-            spotify_refresh_token: refresh || null,
-            expires_at: expires,
-            last_updated: Date.now()
+            spotify_refresh_token: refresh,
+            expires_at: expires
         }, { merge: true });
         
-        console.log('[v0] Tokens saved to Firestore successfully');
+        console.log('[v0] Tokens saved to Firestore');
     } catch (e) {
         console.error('[v0] Firestore token save error:', e);
-        setError('토큰 저장 실패. 다시 시도해주세요.');
     }
   }
   
@@ -852,17 +846,13 @@
                 refreshToken = data.spotify_refresh_token || null;
                 expiresAt = data.expires_at;
                 
-                console.log('[v0] Tokens loaded from Firestore. Expires at:', new Date(expiresAt));
-                
-                if (Date.now() > expiresAt - 60000) {
-                    if (refreshToken) {
-                        console.log('[v0] Token expired or expiring soon, refreshing...');
-                        await refreshSpotifyToken();
-                    } else {
-                        console.log('[v0] Token expired and no refresh token available');
-                        spotifyUnlink();
-                        return;
-                    }
+                // Check if token is expired
+                if (Date.now() > expiresAt && refreshToken) {
+                    await refreshSpotifyToken();
+                } else if (Date.now() > expiresAt) {
+                    // Token expired and no refresh token
+                    spotifyUnlink();
+                    return;
                 }
                 
                 // Load Spotify profile
@@ -872,24 +862,10 @@
                     spotifyProfileImage = me.images?.[0]?.url || ''; 
                     updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
                 } catch(e) { 
-                    console.error('[v0] Failed to load Spotify profile:', e);
-                    // Try refreshing token if profile load fails
-                    if (refreshToken) {
-                        await refreshSpotifyToken();
-                        try {
-                            const me = await spotify('/me');
-                            spotifyDisplayName = me.display_name || me.id;
-                            spotifyProfileImage = me.images?.[0]?.url || ''; 
-                            updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
-                        } catch(e2) {
-                            updateSpotifyAuthUI(true);
-                        }
-                    } else {
-                        updateSpotifyAuthUI(true); 
-                    }
+                    updateSpotifyAuthUI(true); 
                 }
                 
-                console.log('[v0] Spotify session restored from Firestore');
+                console.log('[v0] Tokens loaded from Firestore');
             }
         }
     } catch (e) {
@@ -899,13 +875,11 @@
   
   async function refreshSpotifyToken() {
     if (!refreshToken) {
-        console.warn('[v0] No refresh token available');
         spotifyUnlink();
         return;
     }
     
     try {
-        console.log('[v0] Refreshing Spotify token...');
         const response = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
             headers: {
@@ -919,9 +893,7 @@
         });
         
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error('[v0] Token refresh failed:', errorData);
-            throw new Error('Token refresh failed: ' + (errorData.error_description || response.statusText));
+            throw new Error('Token refresh failed');
         }
         
         const data = await response.json();
@@ -933,11 +905,10 @@
         }
         
         await saveTokensToFirestore(accessToken, refreshToken, expiresAt);
-        console.log('[v0] Token refreshed successfully. New expiry:', new Date(expiresAt));
+        console.log('[v0] Token refreshed successfully');
         
     } catch (e) {
         console.error('[v0] Token refresh error:', e);
-        setError('세션 갱신 실패. 다시 로그인해주세요.');
         spotifyUnlink();
     }
   }
@@ -999,80 +970,34 @@
   }
 
   async function handleSpotifyCallback(){
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
+    const urlParams = new URLSearchParams(window.location.hash.substring(1));
+    const token = urlParams.get('access_token');
+    const expiry = urlParams.get('expires_in');
     
-    if (code) {
-        console.log('[v0] Authorization code received, exchanging for tokens...');
-        const codeVerifier = sessionStorage.getItem('spotify_code_verifier');
+    if (new URLSearchParams(window.location.search).get('code')) window.history.replaceState({}, document.title, window.location.pathname);
+    
+    if (token) {
+        accessToken = token;
+        expiresAt = Date.now() + (parseInt(expiry, 10) * 1000); 
         
-        if (!codeVerifier) {
-            setError('인증 오류: code_verifier를 찾을 수 없습니다.');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            return false;
-        }
+        //  Save tokens to Firestore
+        await saveTokensToFirestore(accessToken, refreshToken, expiresAt);
         
+        window.history.replaceState({}, document.title, window.location.pathname);
         try {
-            const response = await fetch('https://accounts.spotify.com/api/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: SPOTIFY_REDIRECT_URI,
-                    client_id: SPOTIFY_CLIENT_ID,
-                    code_verifier: codeVerifier
-                })
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error('Token exchange failed: ' + (errorData.error_description || response.statusText));
-            }
-            
-            const data = await response.json();
-            accessToken = data.access_token;
-            refreshToken = data.refresh_token; // Now we get the refresh token!
-            expiresAt = Date.now() + (data.expires_in * 1000);
-            
-            console.log('[v0] Tokens received. Access token expires in:', data.expires_in, 'seconds');
-            console.log('[v0] Refresh token available:', !!refreshToken);
-            
-            await saveTokensToFirestore(accessToken, refreshToken, expiresAt);
-            
-            // Clean up
-            sessionStorage.removeItem('spotify_code_verifier');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            
-            try {
-                const me = await spotify('/me');
-                spotifyDisplayName = me.display_name || me.id;
-                spotifyProfileImage = me.images?.[0]?.url || ''; 
-                updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
-                await loadPlaylists(false); 
-            } catch(e) { 
-                console.error('[v0] Failed to load Spotify profile:', e);
-                updateSpotifyAuthUI(true); 
-            }
-            
-            if (currentPageView === 'home') loadHomeContent(currentHomeTab);
-            return true;
-            
-        } catch (e) {
-            console.error('[v0] Token exchange error:', e);
-            setError('Spotify 인증 실패: ' + e.message);
-            sessionStorage.removeItem('spotify_code_verifier');
-            window.history.replaceState({}, document.title, window.location.pathname);
-            return false;
-        }
+            const me = await spotify('/me');
+            spotifyDisplayName = me.display_name || me.id;
+            spotifyProfileImage = me.images?.[0]?.url || ''; 
+            updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
+            await loadPlaylists(false); 
+        } catch(e) { updateSpotifyAuthUI(true); }
+        if (currentPageView === 'home') loadHomeContent(currentHomeTab);
+        return true;
     }
-    
     return false;
   }
   
-  async function spotifyUnlink(){
+  function spotifyUnlink(){
     accessToken = null; 
     refreshToken = null;
     expiresAt = 0;
@@ -1081,78 +1006,48 @@
     userPlaylists = []; 
     allPlaylistsLoaded = false;
     currentPlaylistTracks = [];
-    
-    // Clear from Firestore
-    if (currentFirebaseUser && db) {
-        try {
-            const userDocRef = doc(db, 'users', currentFirebaseUser.uid);
-            await setDoc(userDocRef, {
-                spotify_access_token: null,
-                spotify_refresh_token: null,
-                expires_at: null
-            }, { merge: true });
-            console.log('[v0] Spotify tokens cleared from Firestore');
-        } catch (e) {
-            console.error('[v0] Failed to clear tokens from Firestore:', e);
-        }
-    }
-    
     updateSpotifyAuthUI(false); 
     if (currentPageView === 'home') loadHomeContent(currentHomeTab);
   }
 
-  // -------------------------
-  // 🎵 Spotify API 호출 🎵
-  // -------------------------
-  
-  //  Enhanced spotify API wrapper with automatic token refresh
-  async function spotify(endpoint, options = {}) {
-    if (Date.now() > expiresAt - 60000 && refreshToken) {
-        console.log('[v0] Token expiring soon, refreshing before API call...');
-        await refreshSpotifyToken();
+  async function spotify(endpoint, params, options = {}){
+    //  Check token expiry and refresh if needed
+    if(!accessToken || Date.now() > expiresAt){ 
+        if (refreshToken) {
+            await refreshSpotifyToken();
+            if (!accessToken) {
+                throw new Error('Spotify 인증이 만료되었습니다. 다시 연동해 주세요.');
+            }
+        } else {
+            throw new Error('Spotify 인증이 만료되었습니다. 다시 연동해 주세요.'); 
+        }
     }
     
-    if (!accessToken) throw new Error('Spotify 토큰이 없습니다. 먼저 연동해주세요.');
+    const url = new URL('https://api.spotify.com/v1' + endpoint);
+    if(params) Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v)); 
     
-    const url = endpoint.startsWith('http') ? endpoint : `https://api.spotify.com/v1${endpoint}`;
-    const res = await fetch(url, {
+    const defaultHeaders = { Authorization: 'Bearer ' + accessToken };
+    
+    if (options.body && !options.headers?.['Content-Type']) {
+        defaultHeaders['Content-Type'] = 'application/json';
+    }
+    
+    const res = await fetch(url, { 
         ...options,
-        headers: { 
-            'Authorization': `Bearer ${accessToken}`, 
+        headers: {
+            ...defaultHeaders,
             ...options.headers 
-        }
+        } 
     });
     
-    //  If we get 401, try refreshing token once and retry
-    if (res.status === 401 && refreshToken) {
-        console.log('[v0] Got 401, attempting token refresh...');
-        await refreshSpotifyToken();
-        
-        // Retry the request with new token
-        const retryRes = await fetch(url, {
-            ...options,
-            headers: { 
-                'Authorization': `Bearer ${accessToken}`, 
-                ...options.headers 
-            }
-        });
-        
-        if (!retryRes.ok) {
-            const errorText = await retryRes.text();
-            throw new Error(`Spotify API 오류 (${retryRes.status}): ${errorText}`);
-        }
-        
-        return retryRes.json();
+    if(!res.ok){
+      const t = await res.text().catch(()=> '');
+      throw new Error(`Spotify 오류: ${res.status} ${t.substring(0, 100) || res.statusText}`);
     }
-    
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Spotify API 오류 (${res.status}): ${errorText}`);
-    }
-    
+    if (res.status === 204) return {}; 
     return res.json();
   }
-  
+
   // -------------------------
   // 🔥 YouTube API 캐싱 로직 🔥
   // -------------------------
@@ -1395,7 +1290,7 @@
       else if (tabKey === 'rec') loadRecommendations();
   }
 
-  function loadExternalPage(path, title) {
+  async function loadExternalPage(path, title) {
     const listContainer = $('#list');
     listContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">콘텐츠 로드 중...</p></div>`;
     setViewHeader(title, false);
@@ -1448,7 +1343,7 @@
         });
 
     } catch (e) {
-        listContainer.innerHTML = `<div style="text-align:center; padding: 40px; border:1px solid var(--danger); border-radius:12px; margin:20px 0;"><p style="color:var(--danger); font-weight:700; font-size:1.1em;">페이지 로드 오류: ${title}</p><p class="text-sm mt-2" style="color:var(--muted);">파일(${path})에 접근할 수 없습니다. (에러: ${e.message})</p><p class="text-sm mt-1" style="color:var(--muted);">파일을 생성하거나 경로를 확인해 주세요.</p></div>`;
+        listContainer.innerHTML = `<div style="text-align:center; padding: 40px; border:1px solid var(--danger); border-radius:12px; margin:20px 0;"><p style="color:var(--danger); font-weight:700; font-size:1.1em;">페이지 로드 오류: ${title}</p><p class="text-sm mt-2" style="color:var(--muted);">페이지 파일(${path})에 접근할 수 없습니다. (에러: ${e.message})</p><p class="text-sm mt-1" style="color:var(--muted);">파일을 생성하거나 경로를 확인해 주세요.</p></div>`;
         setError(`페이지 로드 오류: ${title}`);
     }
   }
@@ -1533,7 +1428,7 @@
     try {
         const data = await spotify('/search', { q: query, type: 'track', limit: 50 });
         const tracks = data.tracks?.items || [];
-        renderSearchTracks(tracks, resultsContainer); 
+        renderSearchTracks(tracks); 
     } catch (e) {
         setError('검색 오류: ' + e.message);
         resultsContainer.innerHTML = '';
@@ -2231,16 +2126,13 @@
   // 🚀 애플리케이션 초기화 🚀
   // -------------------------
 
-  function initApp() {
+  async function initApp() {
+      await initializeFirebase(); 
       setupTabListeners();
       setupPlayerControls();
-      initializeFirebase().then(() => {
-          handleSpotifyCallback().then(callbackResult => {
-              if (!callbackResult) { // Only navigate if callback didn't handle it
-                  navigateTo('home');
-              }
-          });
-      });
+      await handleSpotifyCallback();
+      
+      navigateTo('home');
   }
 
   window.onload = initApp;
