@@ -93,7 +93,7 @@
         }
         .pill.active{ background:#1ed76022; color:var(--text); border-color:#1ed76055 }
 
-        /* 리스트 영역 */
+        /* 리스트 영역 (플레이리스트, 좋아요 등 덩어리진 카드) */
         .grid{ overflow:auto; padding-bottom:12px; }
         #currentViewHeader{ font-weight:700; margin:6px 6px 10px; color:#dbe3ff; font-size:16px; display:flex; align-items:center; padding:4px 0; }
         .section-title{ font-weight:700; margin:6px 6px 10px; color:#dbe3ff; font-size:14px; }
@@ -112,11 +112,87 @@
         .subtitle{ color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
         .chip{ font-size:11px; color:#a7b0c6; background:#22283a; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.06); }
         
-        /* 🔥 검색창 스타일 개선 🔥 */
+        /* 🔥 NEW: 트랙 검색/좋아요 목록을 위한 깔끔한 행 스타일 🔥 */
+        .track-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            margin: 4px 6px; 
+            border-radius: 10px;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .track-row:hover {
+            background: var(--panel-2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1;
+            min-width: 0;
+            cursor: pointer; 
+        }
+
+        .track-meta {
+            min-width: 0;
+            flex-grow: 1;
+        }
+
+        .track-row .title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .track-row .subtitle {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .track-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .track-actions .action-btn {
+            appearance: none;
+            border: none;
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.1s, color 0.1s, border-color 0.1s;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .track-actions .action-btn:hover {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        /* Hide '큐에 추가' on very small mobile to prioritize space for '목록 추가' */
+        @media (max-width: 450px) {
+            .track-actions .hide-on-mobile {
+                display: none;
+            }
+            .track-row {
+                padding: 8px 10px;
+            }
+        }
+        
+        /* 검색창 스타일 개선 */
         .search-wrapper {
             display: flex; gap: 10px; padding: 12px 6px; 
             position: sticky; top: 0; z-index: 1; 
-            background: linear-gradient(180deg, var(--bg) 80%, rgba(15,17,21,0)); /* 스크롤 시 아래가 투명하게 */
+            background: linear-gradient(180deg, var(--bg) 80%, rgba(15,17,21,0)); 
         }
         #searchInput {
             flex-grow: 1; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--panel-2); 
@@ -357,6 +433,9 @@
   let auth;
   let db; // Firestore 인스턴스
 
+  // ** 🔥 로컬 인메모리 캐시 (API 쿼터 절약의 핵심) 🔥 **
+  let localVideoIdCache = {}; // Spotify ID: YouTube Video ID. 세션 동안 유효
+
   // ** 플레이리스트 추가 기능 관련 상태 **
   let userPlaylists = []; // Array of {id, name, owner, tracks}
   let allPlaylistsLoaded = false;
@@ -390,10 +469,10 @@
   }
 
   /**
-   * 안내 메시지를 표시하는 함수. (배포 환경을 위해 비활성화)
+   * 안내 메시지를 표시하는 함수.
    */
   const setHint = (msg) => {
-    // 운영 환경에서는 힌트 메시지를 표시하지 않습니다.
+    // 개발 단계에서 캐시 동작 확인용으로 사용합니다.
     // console.log("HINT:", msg);
   }
   
@@ -552,11 +631,23 @@
   // 🔥 YouTube API 캐싱 로직 (쿼터 절약) 🔥
   // -------------------------
   
+  /**
+   * 컬렉션 이름을 기반으로 Firestore 데이터 경로를 반환합니다.
+   * youtube_cache는 전체 사용자가 공유하는 public 경로를 사용합니다.
+   */
   function getUserDataPath(collectionName) {
-    const userId = currentFirebaseUser?.uid;
-    if (!userId) return null;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    return `artifacts/${appId}/users/${userId}/${collectionName}`;
+    
+    // YouTube 캐시는 모든 사용자가 공유하도록 전체 문서(Public Data)로 저장
+    if (collectionName === 'youtube_cache') {
+        return `artifacts/${appId}/public/data/${collectionName}`; 
+    }
+    
+    // 그 외의 사용자 개인 데이터 (예: MY 탭의 데이터)는 개별 문서(Private Data)로 저장
+    const userId = currentFirebaseUser?.uid;
+    if (!userId) return null; // 개인 데이터는 userId 없으면 저장 불가
+    
+    return `artifacts/${appId}/users/${userId}/${collectionName}`; 
   }
 
   /** Spotify Track ID로 캐시된 YouTube Video ID를 가져옵니다. */
@@ -565,7 +656,8 @@
     if (!db || !cachePath) return null;
 
     try {
-        const docRef = doc(db, cachePath, spotifyTrackId);
+        // cachePath는 이제 artifacts/{appId}/public/data/youtube_cache 경로를 가리킵니다.
+        const docRef = doc(db, cachePath, spotifyTrackId); 
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -585,6 +677,7 @@
     if (!db || !cachePath) return;
 
     try {
+        // cachePath는 이제 artifacts/{appId}/public/data/youtube_cache 경로를 가리킵니다.
         const docRef = doc(db, cachePath, spotifyTrackId);
         await setDoc(docRef, {
             videoId: videoId,
@@ -653,7 +746,6 @@
   }
 
   async function loadExternalPage(path, title) {
-    // ... (loadExternalPage 로직은 변경 없음)
     const listContainer = $('#list');
     listContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">콘텐츠 로드 중...</p></div>`;
     setViewHeader(title, false);
@@ -798,6 +890,9 @@
     }
   }
 
+  /**
+   * 🔥 업데이트: 검색 결과 트랙을 새로운 `.track-row` 스타일로 렌더링 🔥
+   */
   function renderSearchTracks(tracks) {
     const root = $('#searchResults');
     root.innerHTML = '';
@@ -808,23 +903,27 @@
     
     const frag = document.createDocumentFragment();
     tracks.forEach((it) => {
-        const card = document.createElement('div');
-        // 검색 결과 카드: 정보와 액션 버튼을 수직/수평으로 배치
-        card.className = 'card flex-col sm:flex-row items-start sm:items-center justify-between !gap-4'; 
-        card.style.padding = '14px'; 
-        card.style.cursor = 'default'; 
-
+        const row = document.createElement('div');
+        row.className = 'track-row'; // NEW CLASS: track-row
+        
+        // 1. 정보 섹션 (클릭 시 재생)
         const info = document.createElement('div');
-        info.className = 'flex gap-3 items-center flex-grow min-w-0 w-full sm:w-auto';
+        info.className = 'track-info';
+        info.addEventListener('click', () => { 
+            queue = [toQueueItem(it)];
+            queueIndex = 0;
+            playQueueIndex(0, true);
+        });
 
         const thumb = document.createElement('div');
-        thumb.className = 'thumb flex-shrink-0';
+        // 기존 thumb 클래스를 재활용하지만, 크기는 작게 조정
+        thumb.className = 'thumb flex-shrink-0 !w-10 !h-10 !rounded-md'; 
         const imageUrl = it.album?.images?.[0]?.url || '';
         if(imageUrl){ thumb.style.backgroundImage = `url(${imageUrl})`; thumb.style.backgroundSize = 'cover'; thumb.textContent = ''; }
         else{ thumb.textContent = '🎵'; }
 
         const meta = document.createElement('div');
-        meta.className = 'meta flex-grow min-w-0';
+        meta.className = 'track-meta';
         const t = document.createElement('div'); t.className = 'title'; t.textContent = it.name || '제목 없음';
 
         const s = document.createElement('div');
@@ -835,46 +934,38 @@
         
         meta.appendChild(t); meta.appendChild(s);
         info.appendChild(thumb); info.appendChild(meta);
-        card.appendChild(info);
+        row.appendChild(info); // Append info to the row
 
-        // 액션 버튼 그룹
+        // 2. 액션 버튼 그룹
         const actions = document.createElement('div');
-        actions.className = 'flex gap-2 flex-shrink-0 mt-2 sm:mt-0'; 
+        actions.className = 'track-actions'; 
         
-        // 1. 즉시 재생 버튼
-        const playBtn = document.createElement('button');
-        playBtn.className = 'login-btn !text-sm !p-2 !rounded-lg !shadow-none hover:!bg-green-400';
-        playBtn.innerHTML = '<i class="fas fa-play" style="margin-right:4px;"></i> 재생';
-        playBtn.addEventListener('click', () => { 
-            queue = [toQueueItem(it)];
-            queueIndex = 0;
-            playQueueIndex(0, true);
-        });
-        actions.appendChild(playBtn);
-        
-        // 2. 큐에 추가 
+        // 1. 큐에 추가 
         const queueAddBtn = document.createElement('button');
-        queueAddBtn.className = 'login-btn !text-sm !p-2 !rounded-lg !shadow-none bg-gray-700 text-white hover:bg-gray-600';
-        queueAddBtn.innerHTML = '<i class="fas fa-plus" style="margin-right:4px;"></i> 큐에 추가';
-        queueAddBtn.addEventListener('click', () => {
+        queueAddBtn.className = 'action-btn hide-on-mobile'; // Hidden on small mobile
+        queueAddBtn.innerHTML = '<i class="fas fa-list-ol" style="margin-right:2px;"></i> 큐';
+        queueAddBtn.title = '큐에 추가';
+        queueAddBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // 버튼 클릭 시 트랙 재생 방지
             const item = toQueueItem(it);
             queue.push(item);
             setError(`✅ 큐에 '${item.title.substring(0, 10)}...'을(를) 추가했습니다. (현재 ${queue.length}곡)`);
         });
         actions.appendChild(queueAddBtn);
         
-        // 3. 플레이리스트에 추가 버튼 (신규 기능)
+        // 2. 플레이리스트에 추가 버튼
         const playlistAddBtn = document.createElement('button');
-        playlistAddBtn.className = 'login-btn !text-sm !p-2 !rounded-lg !shadow-none !bg-indigo-700 text-white hover:!bg-indigo-600';
-        playlistAddBtn.innerHTML = '<i class="fas fa-list-ul" style="margin-right:4px;"></i> 목록 추가';
-        playlistAddBtn.addEventListener('click', () => { 
+        playlistAddBtn.className = 'action-btn';
+        playlistAddBtn.innerHTML = '<i class="fas fa-plus" style="margin-right:2px;"></i> 목록';
+        playlistAddBtn.title = '플레이리스트에 추가';
+        playlistAddBtn.addEventListener('click', (e) => { 
+            e.stopPropagation(); // 버튼 클릭 시 트랙 재생 방지
             showPlaylistSelector(it.uri, it.name);
         });
         actions.appendChild(playlistAddBtn);
-
-
-        card.appendChild(actions);
-        frag.appendChild(card);
+        
+        row.appendChild(actions);
+        frag.appendChild(row);
     });
     root.appendChild(frag);
   }
@@ -1055,7 +1146,8 @@
       $('#list').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">좋아요한 트랙 로드 중...</p></div>`;
       const data = await spotify('/me/tracks', { limit: 50 });
       const tracks = (data.items || []).map(it => it.track).filter(Boolean);
-      renderList(tracks, 'playlist-track'); 
+      // 🔥 업데이트: liked tracks도 track-row 스타일로 렌더링 🔥
+      renderSearchTracks(tracks); 
     }catch(e){ setError('좋아요한 트랙 로드 오류: ' + e.message); }
   }
   async function loadRecommendations(){
@@ -1070,7 +1162,8 @@
       if(seedTracks.length) params.seed_tracks = seedTracks.slice(0,3).join(',');
       if(!params.seed_artists && !params.seed_tracks){ params.seed_genres = 'pop'; }
       const rec = await spotify('/recommendations', Object.assign({ limit: 30 }, params));
-      renderList(rec.tracks || [], 'playlist-track'); 
+      // 🔥 업데이트: recommended tracks도 track-row 스타일로 렌더링 🔥
+      renderSearchTracks(rec.tracks || []); 
     }catch(e){ setError('추천 트랙 로드 오류: ' + e.message); }
   }
   
@@ -1081,7 +1174,7 @@
   function toQueueItem(t){
     const title = t.name || '제목 없음';
     const artists = (t.artists||[]).map(a=>a.name).join(', ');
-    const query = `${title} ${artists} audio`;
+    const query = `${title} ${artists} official audio`; // 검색 품질 향상을 위해 'official audio' 추가
     const image = t.album?.images?.[0]?.url || '';
     const id = t.id; // Spotify Track ID
     return { title, artists, query, image, id }; 
@@ -1092,6 +1185,7 @@
     const it = queue[idx];
     setNowPlaying(it);
     try{
+      // 🔥 캐시 로직 최적화된 함수 사용 🔥
       const vid = await findYouTubeVideoId(it.query, it.id); 
       if(!vid){ setError('YouTube 검색 결과가 없습니다.'); return; }
       ensureYTPlayer();
@@ -1114,18 +1208,40 @@
     else{ n.style.backgroundImage = ''; n.textContent = '🎵'; }
   }
 
+  /**
+   * YouTube Video ID를 찾고, API 호출 전에 로컬 및 Firestore 캐시를 먼저 확인합니다.
+   * @param {string} q - YouTube 검색 쿼리.
+   * @param {string} spotifyTrackId - Spotify 트랙 ID.
+   * @returns {Promise<string|null>} Video ID
+   */
   async function findYouTubeVideoId(q, spotifyTrackId) {
+    // 1. 🔥 NEW: 로컬(세션) 인메모리 캐시 확인 (가장 빠름, 0 쿼터 비용)
+    if (spotifyTrackId && localVideoIdCache[spotifyTrackId]) {
+        setHint("Local cache hit (Session)");
+        return localVideoIdCache[spotifyTrackId];
+    }
+
+    // 2. 기존: Firestore (글로벌) 캐시 확인 (빠름, 0 쿼터 비용)
+    let videoId = null;
     if (spotifyTrackId) {
         const cachedId = await getCachedVideoId(spotifyTrackId);
         if (cachedId) {
+            // 로컬 캐시에 저장하여 다음 호출부터는 Firestore도 건너뜁니다.
+            localVideoIdCache[spotifyTrackId] = cachedId; 
+            setHint("Firestore cache hit (Global)");
             return cachedId;
         }
     }
 
+    // 3. YouTube API 호출 (100 쿼터 비용)
+    setHint("YouTube API call (Expensive!)");
     const url = new URL('https://www.googleapis.com/youtube/v3/search');
-    url.searchParams.set('part','snippet'); url.searchParams.set('q', q);
-    url.searchParams.set('type','video'); url.searchParams.set('videoCategoryId','10'); 
-    url.searchParams.set('maxResults','1'); url.searchParams.set('key', YT_API_KEY);
+    url.searchParams.set('part','snippet'); 
+    url.searchParams.set('q', `${q}`); // query에 이미 "official audio" 포함
+    url.searchParams.set('type','video'); 
+    url.searchParams.set('videoCategoryId','10'); 
+    url.searchParams.set('maxResults','1'); 
+    url.searchParams.set('key', YT_API_KEY);
     
     let response;
     for(let attempt = 0; attempt < 3; attempt++) {
@@ -1143,9 +1259,13 @@
     }
     
     const j = await response.json();
-    const videoId = j.items?.[0]?.id?.videoId || null;
+    videoId = j.items?.[0]?.id?.videoId || null;
 
+    // 4. 캐시 업데이트
     if (videoId && spotifyTrackId) {
+        // 로컬 캐시에 저장
+        localVideoIdCache[spotifyTrackId] = videoId;
+        // Firestore (글로벌) 캐시에 저장
         await saveCachedVideoId(spotifyTrackId, videoId);
     }
     
