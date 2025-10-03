@@ -671,6 +671,30 @@
     }
   }
 
+  function navigateTo(view) {
+    currentPageView = view;
+    // 1. 하단 내비게이션 활성 상태 업데이트
+    $$('.nav-item').forEach(btn => btn.classList.remove('active'));
+    $(`#nav${view.charAt(0).toUpperCase() + view.slice(1)}`).classList.add('active');
+
+    // 2. 상단 탭 (Home용) 표시/숨김
+    $$('.controls .pill').forEach(p => p.classList.toggle('hidden', view !== 'home'));
+    
+    // 3. 뷰에 따라 콘텐츠 로드
+    if (view === 'home') {
+        // Home 뷰는 내부 탭(playlists, liked 등)을 사용
+        setHomeTabs(currentHomeTab);
+        loadHomeContent(currentHomeTab);
+    } else if (view === 'search') {
+        // Search 뷰는 외부 파일을 로드
+        loadExternalPage('search.html', '통합 검색');
+    } else if (view === 'library') {
+        // Library 뷰는 외부 파일을 로드
+        loadExternalPage('my.html', '나의 보관함');
+    }
+  }
+
+
   async function loadPlaylistTracks(plId, plName){
     if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
     try{
