@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Spotify 트랙 검색 및 저장</title>
+  <style>
+    :root{
+      --bg:#0f1115;
+      --panel:#151823;
+      --panel-2:#1b2030;
+      --accent:#1ed760; /* Spotify 그린 */
+      --muted:#96a0b5;
+      --text:#eef2ff;
+      --danger:#ff5d5d;
+      --shadow:0 10px 30px rgba(0,0,0,0.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,#0b0e14 0%, #0f1115 40%, #0f1115 100%);
+      color:var(--text); 
+      font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Apple SD Gothic Neo, Noto Sans KR, sans-serif;
+      overflow:hidden; /* 화면 전체에 스크롤 방지 */
+    }
+    
+    /* 기존 App/Auth Bar 스타일 삭제 */
+    /* 기존 Player Bar 스타일 삭제 */
+
+
+    /* Content/Search */
+    .container{ height:100%; } /* 단일 섹션만 남았으므로 레이아웃 단순화 */
+    .content{
+      display:grid; 
+      grid-template-rows:auto auto 1fr; /* 검색 영역, 힌트 영역, 목록 영역 */
+      gap:0px; 
+      padding:12px; 
+      /* 헤더(약 58px)와 플레이어 바(70px)가 제거되었으므로, 화면 전체 높이를 사용하도록 조정 (24px는 상하 패딩) */
+      height:calc(100vh - 24px); 
+    }
+    .search-area{
+      display:flex; gap:10px; align-items:center; overflow:auto; padding:4px 2px;
+      margin-bottom:8px;
+    }
+    .search{
+      flex:1; display:flex; gap:8px; align-items:center; background:var(--panel);
+      border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:8px 10px;
+    }
+    .search input{
+      flex:1; border:none; outline:none; background:transparent; color:var(--text);
+      font-size:14px;
+    }
+
+    /* List */
+    .grid{ overflow:auto; padding-bottom:12px; }
+    .section-title{ font-weight:700; margin:6px 6px 10px; color:#dbe3ff; font-size:16px; }
+    .card{
+      display:flex; gap:12px; align-items:center; background:var(--panel);
+      border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:12px; margin:6px;
+      cursor:pointer; transition:transform .15s ease, background .15s ease, border-color .15s ease;
+    }
+    .card:hover{ transform:translateY(-1px); border-color:#1ed76055; background:#161a26 }
+    .thumb{
+      width:52px; height:52px; border-radius:8px; background:#222837; flex:0 0 52px; overflow:hidden; display:grid; place-items:center; color:#7f8bad;
+      border:1px solid rgba(255,255,255,0.06);
+    }
+    .meta{ flex:1; min-width:0 }
+    .title{ font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .subtitle{ color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+    .chip{ font-size:11px; color:#a7b0c6; background:#22283a; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.06); }
+    .save-btn{
+      margin-left:auto; background:var(--panel-2); color:var(--accent);
+      width:38px; height:38px; border-radius:10px; display:grid; place-items:center; flex-shrink: 0;
+      transition: background 0.15s; border:none; 
+    }
+    .save-btn:hover { background: rgba(30,215,96,0.1); }
+
+
+    /* Utilities */
+    .hidden{ display:none !important }
+    .err{ color:var(--danger); font-size:12px; margin:8px 6px 0 }
+    .hint{ color:#a7b0c6; font-size:12px; margin:6px }
+    .grid::-webkit-scrollbar, .content::-webkit-scrollbar { width:8px; height:8px }
+    .grid::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb { background:#2a3246; border-radius:999px }
+
+    /* Modal */
+    .modal-overlay {
+      position:fixed; top:0; left:0; right:0; bottom:0;
+      background:rgba(0,0,0,0.8); z-index:20;
+      display:flex; justify-content:center; align-items:center;
+      padding:20px;
+    }
+    .modal-content {
+      background:var(--panel); border-radius:18px; padding:20px;
+      width:100%; max-width:400px; max-height:80vh; overflow:hidden;
+      box-shadow:var(--shadow); display:flex; flex-direction:column;
+    }
+    .modal-title { font-size:18px; font-weight:700; margin:0 0 4px; color:var(--text); }
+    .modal-subtitle { color:var(--accent); font-size:14px; margin:0 0 15px; font-weight:600;}
+    .modal-list-container {
+      overflow-y:auto; flex:1; margin-bottom:15px;
+      border-top:1px solid rgba(255,255,255,0.06); padding-top:10px;
+    }
+    .modal-actions { text-align:right }
+    .modal-list-item {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px; border-radius:10px; cursor:pointer;
+      transition:background 0.1s; margin-bottom:4px;
+      border:1px solid transparent;
+    }
+    .modal-list-item:hover { background:var(--panel-2); border-color:#1ed76033; }
+    .modal-list-item .name { font-size:14px; font-weight:500; }
+    .modal-list-item .count { font-size:12px; color:var(--muted); }
+    .loading-spinner { 
+      margin:20px auto; width:30px; height:30px; border:4px solid rgba(255,255,255,0.2);
+      border-top:4px solid var(--accent); border-radius:50%; animation:spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+
+  <!-- 헤더(.appbar) 제거 -->
+
+  <div class="content">
+    <div class="search-area">
+        <div class="search">
+            <!-- 검색 아이콘 -->
+            <svg id="searchIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="searchInput" placeholder="Spotify에서 트랙 검색..." />
+        </div>
+    </div>
+
+    <div id="errorBox" class="err hidden"></div>
+    <div id="hintBox" class="hint">Spotify에서 트랙을 검색한 후, ➕ 버튼을 눌러 플레이리스트에 저장하거나 클릭하여 재생하세요.</div>
+    
+    <div id="currentViewHeader" class="section-title">검색 결과</div>
+
+    <div id="list" class="grid" role="list" data-current-view="search-results">
+        <div class="hint" style="margin:12px">검색어를 입력하고 엔터를 누르세요.</div>
+    </div>
+  </div>
+
+  <!-- 플레이어 바(.player-bar-container) 제거 -->
+  <!-- 플레이어 컨트롤과 정보는 더 이상 표시되지 않습니다. -->
+
+
+<!-- 플레이리스트 선택 모달 (기존 위치 유지) -->
+<div id="playlistSelectionModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <h3 id="modalTitle" class="modal-title">플레이리스트에 추가</h3>
+    <p id="modalTrackName" class="modal-subtitle">트랙 이름</p>
+    <div id="playlistListContainer" class="modal-list-container">
+      <div class="loading-spinner"></div>
+    </div>
+    <div class="modal-actions">
+      <button id="modalCloseBtn" class="logout-btn">닫기</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- YouTube IFrame API & Application Logic -->
+<script type="module">
+  // Firebase SDKs Import
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+  // -------------------------
+  // 🔑 상수 및 상태 🔑
+  // -------------------------
+  const SPOTIFY_CLIENT_ID = '9841b0890ed6400cb6d8fdb0692c102f'; 
+  const SPOTIFY_REDIRECT_URI = 'https://play.nmate.kr/callback'; 
+  // 수정 기능을 위해 필요한 스코프
+  const SPOTIFY_SCOPES = [
+    'user-read-email', 'playlist-read-private', 'user-library-read',
+    'playlist-modify-public', 'playlist-modify-private', 'user-library-modify', 'user-read-private' 
+  ].join(' ');
+  const YT_API_KEY = 'AIzaSyDaJlMOdY2Pd0Cv-vkMf8fiu_7LdSCBu4k'; 
+
+  let accessToken = null;
+  let expiresAt = 0;
+  const DEFAULT_AVATAR_URL = 'https://i.postimg.cc/YCg2Zv0V/1.png'; 
+  let spotifyDisplayName = '';
+  let spotifyProfileImage = '';
+  let isDropdownOpen = false; 
+  let queue = [];
+  let queueIndex = -1;
+  let ytPlayer = null;
+  let ytReady = false;
+  let progressTimer = null;
+  let currentFirebaseUser = null;
+  let auth;
+  let modifiablePlaylists = [];
+  let isPlaylistsLoading = false;
+
+
+  // -------------------------
+  // 🛠️ 유틸리티 함수 (최적화) 🛠️
+  // -------------------------
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => document.querySelectorAll(sel);
+  const formatTime = (sec) => {
+    if(!isFinite(sec) || sec < 0) return '0:00';
+    const m = Math.floor(sec/60), s = Math.floor(sec%60);
+    return `${m}:${s.toString().padStart(2,'0')}`;
+  }
+  const setError = (msg) => {
+    const box = $('#errorBox');
+    box.textContent = msg || '';
+    box.classList.toggle('hidden', !msg);
+  }
+  const setHint = (msg) => {
+    const box = $('#hintBox');
+    box.textContent = msg || '';
+    box.classList.toggle('hidden', !msg);
+  }
+  
+  // PKCE Helpers (Minimal)
+  const generateRandomString = (length) => Array.from({length}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]).join('');
+  const sha256 = (plain) => window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(plain));
+  const base64urlencode = (a) => btoa(String.fromCharCode.apply(null, new Uint8Array(a))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const generateCodeChallenge = async (v) => base64urlencode(await sha256(v));
+
+  // -------------------------
+  // 🔐 인증 및 상태 관리 🔐
+  // -------------------------
+  
+  const FIREBASE_CONFIG = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSyC2iRkFZUYZsVIbGzXcCLY1t4eBcfzvwzg", projectId: "mateplay-a" };
+  const initialAuthToken = typeof __initial_auth_token === 'string' ? __initial_auth_token : null; 
+
+  async function initializeFirebase() {
+    try {
+        const app = initializeApp(FIREBASE_CONFIG);
+        auth = getAuth(app);
+        if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken).catch(() => setError("자동 로그인 실패.")); 
+        onAuthStateChanged(auth, (user) => {
+            currentFirebaseUser = user;
+            updateFirebaseAuthUI(user);
+        });
+    } catch(e) { setError('Firebase 초기화 실패: ' + e.message); }
+  }
+  
+  function updateFirebaseAuthUI(user) {
+    // 헤더가 제거되었으므로 UI 업데이트 로직은 실행하지 않음
+    if (!user) return spotifyUnlink();
+    updateSpotifyAuthUI(!!accessToken, spotifyDisplayName, spotifyProfileImage);
+  }
+  
+  function updateSpotifyAuthUI(isLinked, displayName = '', profileImage = '') {
+      // 헤더가 제거되었으므로 UI 업데이트 로직은 실행하지 않음
+  }
+
+  async function firebaseLogout() {
+    try { await signOut(auth); spotifyUnlink(); setError('Firebase에서 로그아웃되었습니다.'); } 
+    catch(e) { setError('로그아웃 오류: ' + e.message); }
+  }
+
+  async function startSpotifyLinking(){ 
+    setError(''); 
+    const codeVerifier = generateRandomString(128);
+    sessionStorage.setItem('spotify_code_verifier', codeVerifier); 
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+    const authUrl = new URL('https://accounts.spotify.com/authorize');
+    authUrl.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
+    authUrl.searchParams.set('response_type', 'code'); 
+    authUrl.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
+    authUrl.searchParams.set('scope', SPOTIFY_SCOPES);
+    authUrl.searchParams.set('code_challenge_method', 'S256'); 
+    authUrl.searchParams.set('code_challenge', codeChallenge); 
+    authUrl.searchParams.set('show_dialog', 'true');
+    window.location.href = authUrl.toString();
+  }
+
+  async function handleSpotifyCallback(){
+    const urlParams = new URLSearchParams(window.location.hash.substring(1));
+    const token = urlParams.get('access_token');
+    const expiry = urlParams.get('expires_in');
+    
+    if (new URLSearchParams(window.location.search).get('code')) window.history.replaceState({}, document.title, window.location.pathname);
+    
+    if (token) {
+        accessToken = token;
+        expiresAt = Date.now() + (parseInt(expiry, 10) * 1000); 
+        window.history.replaceState({}, document.title, window.location.pathname);
+        try {
+            const me = await spotify('/me');
+            spotifyDisplayName = me.display_name || me.id;
+            spotifyProfileImage = me.images?.[0]?.url || ''; 
+            updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
+        } catch(e) { updateSpotifyAuthUI(true); }
+        setHint('✅ Spotify 인증 성공! 이제 트랙을 검색하고 저장할 수 있습니다.');
+        return true;
+    }
+    return false;
+  }
+  
+  function spotifyUnlink(){
+    accessToken = null; expiresAt = 0;
+    spotifyDisplayName = '';
+    spotifyProfileImage = '';
+    modifiablePlaylists = [];
+    updateSpotifyAuthUI(false);
+    setHint('Spotify 연동이 해제되었습니다. 검색 기능을 사용하려면 다시 연동하세요.');
+    $('#list').innerHTML = `<div class="hint" style="margin:12px">Spotify 인증이 필요합니다.</div>`;
+    $('#currentViewHeader').textContent = `검색 결과`;
+  }
+
+  async function spotify(endpoint, params, method = 'GET', body = null){
+    if(!accessToken || Date.now() > expiresAt){ throw new Error('인증이 만료되었습니다. 다시 연동해 주세요.'); }
+    const url = new URL('https://api.spotify.com/v1' + endpoint);
+    if(method === 'GET' && params) Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v)); 
+    
+    const fetchOptions = {
+        method,
+        headers: { 
+            Authorization: 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+        }
+    };
+    if (body) fetchOptions.body = JSON.stringify(body);
+    
+    const res = await fetch(url, fetchOptions);
+    if(!res.ok){
+      const t = await res.text().catch(()=> '');
+      throw new Error(`Spotify 오류: ${res.status} ${t.substring(0, 100) || res.statusText}`);
+    }
+    return method !== 'GET' && (res.status === 204 || res.status === 202) ? null : res.json();
+  }
+
+
+  // -------------------------
+  // 🔍 검색 및 저장 로직 🔍
+  // -------------------------
+  
+  async function spotifySearchTracks(query){
+    if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
+    try {
+        setHint(`Spotify에서 '${query}' 검색 중...`);
+        const data = await spotify('/search', { q: query, type: 'track', limit: 50 });
+        renderList(data.tracks?.items || []); 
+        setHint(`'${query}' 검색 결과 (${data.tracks?.items?.length || 0}개 트랙) | ➕ 버튼을 눌러 플레이리스트에 추가하세요.`);
+    } catch(e) {
+        setError('Spotify 검색 오류: ' + e.message);
+        setHint('');
+    }
+  }
+
+  async function fetchUserModifiablePlaylists() {
+    if (modifiablePlaylists.length > 0 && !isPlaylistsLoading) return modifiablePlaylists;
+    if (isPlaylistsLoading) return []; 
+    
+    isPlaylistsLoading = true;
+    try {
+        const data = await spotify('/me/playlists', { limit: 50 });
+        let userId = '';
+        try { userId = (await spotify('/me'))?.id || ''; } catch(e) { /* 무시 */ }
+
+        const finalPlaylists = (data.items || []).filter(p => p.owner?.id === userId || p.collaborative);
+        modifiablePlaylists = finalPlaylists;
+        return finalPlaylists;
+    } catch (e) {
+        setError('플레이리스트 목록 로드 오류: ' + e.message);
+        return [];
+    } finally {
+        isPlaylistsLoading = false;
+    }
+  }
+
+  async function addTrackToLikedSongs(trackId, trackName){
+    if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
+    try{
+        setHint(`'${trackName}'을(를) 보관함(Liked Songs)에 추가 중...`);
+        await spotify(`/me/tracks?ids=${trackId}`, null, 'PUT');
+        setHint(`✅ '${trackName}'이(가) 내 좋아요한 트랙에 성공적으로 추가되었습니다!`);
+    }catch(e){
+        setError(`트랙 저장 오류: ${e.message}`);
+    }
+  }
+
+  async function addTrackToPlaylist(trackId, playlistId, playlistName) {
+      if (!accessToken) { setError('Spotify 인증이 필요합니다.'); return; }
+      try{
+          setHint(`'${playlistName}' 플레이리스트에 트랙을 추가 중...`);
+          const trackUri = `spotify:track:${trackId}`;
+          await spotify(`/playlists/${playlistId}/tracks`, null, 'POST', { uris: [trackUri] });
+          setHint(`✅ 트랙이 '<b>${playlistName}</b>'에 성공적으로 추가되었습니다!`);
+          modifiablePlaylists = []; 
+      }catch(e){
+          setError(`플레이리스트 추가 오류: ${e.message}`);
+      }
+  }
+
+  function showPlaylistSelectionModal(trackId, trackTitle) {
+      const modal = $('#playlistSelectionModal');
+      const listContainer = $('#playlistListContainer');
+      $('#modalTrackName').textContent = `트랙: ${trackTitle}`;
+      modal.classList.remove('hidden');
+      
+      listContainer.innerHTML = '<div class="loading-spinner"></div>';
+      
+      fetchUserModifiablePlaylists().then(playlists => {
+          listContainer.innerHTML = '';
+          if(playlists.length === 0) {
+              listContainer.innerHTML = `<div class="hint" style="margin:12px">수정 가능한 플레이리스트가 없습니다.</div>`;
+              return;
+          }
+
+          const likedSongsItem = document.createElement('div');
+          likedSongsItem.className = 'modal-list-item';
+          likedSongsItem.style.fontWeight = 'bold';
+          likedSongsItem.innerHTML = `<span class="name" style="color:var(--accent)">❤ 좋아요한 트랙</span><span class="count">바로 추가</span>`;
+          likedSongsItem.addEventListener('click', () => {
+              addTrackToLikedSongs(trackId, trackTitle);
+              modal.classList.add('hidden');
+          });
+          listContainer.appendChild(likedSongsItem);
+
+          playlists.forEach(pl => {
+              const item = document.createElement('div');
+              item.className = 'modal-list-item';
+              item.innerHTML = `<span class="name">${pl.name}</span><span class="count">${pl.tracks.total}곡</span>`;
+              item.addEventListener('click', () => {
+                  addTrackToPlaylist(trackId, pl.id, pl.name);
+                  modal.classList.add('hidden');
+              });
+              listContainer.appendChild(item);
+          });
+      });
+  }
+  
+  // -------------------------
+  // 🎧 플레이어 로직 🎧
+  // -------------------------
+  
+  function toQueueItem(t){
+    const title = t.name || '제목 없음';
+    const artists = (t.artists||[]).map(a=>a.name).join(', ');
+    const query = `${title} ${artists} official audio`;
+    const image = t.album?.images?.[0]?.url || '';
+    return { title, artists, query, image };
+  }
+
+  async function playQueueIndex(idx, autoplay){
+    if(idx < 0 || idx >= queue.length) return;
+    const it = queue[idx];
+    setNowPlaying(it); // 이 함수는 더 이상 표시되지 않는 UI 요소를 업데이트하려고 시도합니다.
+    try{
+      const vid = await ytSearchFirstVideo(it.query);
+      if(!vid){ setError('YouTube 검색 결과가 없습니다.'); return; }
+      ensureYTPlayer();
+      if(ytReady){ ytPlayer.loadVideoById(vid); if(!autoplay){ ytPlayer.pauseVideo(); } }
+      else{
+        const timer = setInterval(() => {
+          if(ytReady){ clearInterval(timer); ytPlayer.loadVideoById(vid); if(!autoplay) ytPlayer.pauseVideo(); }
+        }, 150);
+      }
+    }catch(e){ setError('YouTube 재생 오류: ' + e.message); }
+  }
+
+  function setNowPlaying(it){
+    // 재생 바가 제거되었으므로, 관련 UI 업데이트 로직을 주석 처리하거나 제거합니다.
+    // $('#nowTitle').textContent = it.title;
+    // $('#nowSubtitle').textContent = it.artists || '—';
+    // const n = $('#nowThumb');
+    // if(it.image){ n.style.backgroundImage = `url(${it.image})`; n.style.backgroundSize = 'cover'; n.textContent = ''; }
+    // else{ n.style.backgroundImage = ''; n.textContent = '🎵'; }
+    console.log(`Now Playing: ${it.title} by ${it.artists}`); // 콘솔에 재생 정보를 표시합니다.
+  }
+  
+  async function ytSearchFirstVideo(q){
+    const url = new URL('https://www.googleapis.com/youtube/v3/search');
+    url.searchParams.set('part','snippet'); url.searchParams.set('q', q);
+    url.searchParams.set('type','video'); url.searchParams.set('videoCategoryId','10'); 
+    url.searchParams.set('maxResults','1'); url.searchParams.set('key', YT_API_KEY);
+    const res = await fetch(url);
+    if(!res.ok){ throw new Error(`YouTube API 오류: ${res.status}`); }
+    const j = await res.json();
+    return j.items?.[0]?.id?.videoId || null;
+  }
+
+  function ensureYTPlayer(){
+    if(ytPlayer) return;
+    if(!window.YT){
+      const tag = document.createElement('script'); tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+      window.onYouTubeIframeAPIReady = createPlayer;
+    }else{ createPlayer(); }
+  }
+  function createPlayer(){
+    const div = document.createElement('div'); div.id = 'yt-iframe';
+    div.style.position='fixed'; div.style.left='-9999px'; div.style.top='-9999px';
+    document.body.appendChild(div);
+    ytPlayer = new YT.Player('yt-iframe', {
+      height: '0', width: '0', videoId: '', playerVars: { 'playsinline': 1 },
+      events:{ 'onReady': () => { ytReady = true; setupProgressTimer(); }, 'onStateChange': onYTStateChange, 'onError': () => setError('YouTube 플레이어 오류가 발생했습니다.') }
+    });
+  }
+  
+  function onYTStateChange(e){
+    const state = e.data;
+    // const playPauseBtn = $('#playPauseBtn'); // 버튼이 제거됨
+
+    if(state === 1){ setError(''); }
+    else if(state === 0){
+      if(queueIndex < queue.length - 1){ queueIndex++; playQueueIndex(queueIndex, true); }
+    }
+  }
+
+  function setupProgressTimer(){
+    if(progressTimer) clearInterval(progressTimer);
+    // const progressBar = $('#progressBar'); // 프로그레스 바가 제거됨
+    progressTimer = setInterval(() => {
+      if(!ytPlayer) return;
+      const d = ytPlayer.getDuration() || 0;
+      const c = ytPlayer.getCurrentTime() || 0;
+      const ratio = d ? Math.min(100, Math.max(0, (c/d)*100)) : 0;
+      
+      // 관련 UI 요소가 제거되었으므로 업데이트 로직을 주석 처리합니다.
+      // $('#curTime').textContent = formatTime(c);
+      // $('#durTime').textContent = formatTime(d);
+      // $('#seek').value = String(Math.floor(ratio)); 
+      // progressBar.style.width = `${ratio}%`; 
+    }, 500);
+  }
+  
+  // -------------------------
+  // 🎨 UI 렌더링 및 이벤트 🎨
+  // -------------------------
+
+  function renderList(items){
+    const root = $('#list');
+    root.innerHTML = '';
+    if(!items || !items.length){
+      root.innerHTML = `<div class="hint" style="margin:12px">검색 결과가 없습니다.</div>`;
+      return;
+    }
+    const frag = document.createDocumentFragment();
+    items.forEach((it) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.addEventListener('click', () => onItemClick(it));
+
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      const imageUrl = it.album?.images?.[0]?.url || '';
+      
+      if(imageUrl){ thumb.style.backgroundImage = `url(${imageUrl})`; thumb.style.backgroundSize = 'cover'; thumb.textContent = ''; }
+      else{ thumb.textContent = '🎵'; }
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const t = document.createElement('div');
+      t.className = 'title';
+      t.textContent = it.name || '제목 없음';
+
+      const s = document.createElement('div');
+      s.className = 'subtitle';
+      const artists = (it.artists || []).map(a=>a.name).join(', ');
+      const album = it.album?.name || '';
+      s.textContent = `${artists}${album ? ' · ' + album : ''}`;
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn save-btn';
+      saveBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>`;
+      saveBtn.title = '플레이리스트에 추가';
+      saveBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showPlaylistSelectionModal(it.id, `${it.name} - ${artists}`); 
+      });
+
+      meta.appendChild(t); meta.appendChild(s);
+      card.appendChild(thumb);
+      card.appendChild(meta);
+      card.appendChild(saveBtn);
+      
+      frag.appendChild(card);
+    });
+    root.appendChild(frag);
+  }
+
+  async function onItemClick(item){
+    try{
+      queue = [toQueueItem(item)];
+      queueIndex = 0;
+      playQueueIndex(0, true);
+    }catch(e){ setError(e.message); }
+  }
+
+
+  function setupControls() {
+    // Search Handlers
+    const searchHandler = () => {
+        const q = $('#searchInput').value.trim();
+        if(!q) return;
+        spotifySearchTracks(q);
+        $('#currentViewHeader').textContent = `검색 결과: ${q}`;
+    };
+    $('#searchInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') searchHandler(); });
+    $('#searchIcon').addEventListener('click', searchHandler);
+
+    // Player Handlers (재생바가 제거되었으므로 관련 핸들러 제거/주석 처리)
+    // $('#playPauseBtn').addEventListener('click', () => {
+    //   if(!ytPlayer) return ensureYTPlayer();
+    //   const st = ytPlayer.getPlayerState();
+    //   if(st === 1){ ytPlayer.pauseVideo(); } else { ytPlayer.playVideo(); }
+    // });
+    // $('#prevBtn').addEventListener('click', () => { if(queueIndex > 0){ queueIndex--; playQueueIndex(queueIndex, true); } });
+    // $('#nextBtn').addEventListener('click', () => { if(queueIndex < queue.length - 1){ queueIndex++; playQueueIndex(queueIndex, true); } });
+    // $('#muteBtn').addEventListener('click', () => { if(ytPlayer) ytPlayer.isMuted() ? ytPlayer.unMute() : ytPlayer.mute(); });
+    // $('#seek').addEventListener('input', (e) => {
+    //   const v = Number(e.target.value);
+    //   if(ytPlayer){ const d = ytPlayer.getDuration() || 0; ytPlayer.seekTo(d * (v/100), true); }
+    // });
+
+    // Auth Handlers (헤더와 드롭다운이 제거되었으므로 관련 핸들러 제거)
+    // $('#firebaseLoginBtn').addEventListener('click', () => { if (!currentFirebaseUser) window.location.href = '/auth'; });
+    // const userChip = $('#userChip');
+    // const userDropdown = $('#userDropdown');
+    // userChip.addEventListener('click', (e) => {
+    //     e.stopPropagation(); isDropdownOpen = !isDropdownOpen; userDropdown.classList.toggle('hidden', !isDropdownOpen);
+    // });
+    // document.addEventListener('click', (e) => {
+    //     if (!userDropdown.classList.contains('hidden') && !userChip.contains(e.target) && !userDropdown.contains(e.target)) { isDropdownOpen = false; userDropdown.classList.add('hidden'); }
+    // });
+    // $('#spotifyLinkBtn').addEventListener('click', () => {
+    //     userDropdown.classList.add('hidden');
+    //     $('#spotifyLinkBtn').classList.contains('unlink-btn') ? spotifyUnlink() : startSpotifyLinking();
+    // });
+    // document.getElementById('firebaseLogoutBtnDropdown').addEventListener('click', () => { userDropdown.classList.add('hidden'); firebaseLogout(); });
+    
+    // 모달 닫기 버튼은 유지
+    $('#modalCloseBtn').addEventListener('click', () => $('#playlistSelectionModal').classList.add('hidden'));
+
+  }
+
+  // -------------------------
+  // 🚀 애플리케이션 초기화 🚀
+  // -------------------------
+
+  async function initApp() {
+      await initializeFirebase(); 
+      setupControls();
+      await handleSpotifyCallback();
+  }
+
+  window.onload = initApp;
+
+</script>
+</body>
+</html>
