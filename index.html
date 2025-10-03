@@ -36,69 +36,125 @@
       border:1px solid rgba(255,255,255,0.06);
     }
     
-    /* === 인증 영역 CSS === */
+    /* === 인증 영역 CSS: 새로운 프로필 칩/드롭다운 스타일 === */
     .auth-area {
       display: flex;
       align-items: center;
       gap: 12px; 
     }
-
-    .login-btn, .logout-btn{
+    
+    .login-btn{
       appearance:none; border:none; outline:none;
       font-weight:700;
       padding:10px 14px; border-radius:12px;
       white-space:nowrap; cursor:pointer; transition:transform 0.1s;
-    }
-    /* Spotify/Firebase 일반 로그인 버튼 */
-    .login-btn{
       background:var(--accent); color:#0a0d12;
       box-shadow:0 6px 20px rgba(30,215,96,0.3);
     }
     .login-btn:hover { transform: translateY(-1px); }
 
-    /* Spotify 일반 로그아웃 버튼 */
-    .logout-btn{ 
-      background:var(--panel-2); color:var(--text); 
-      box-shadow:var(--shadow); 
-      border:1px solid rgba(255,255,255,0.06);
+    /* NEW: User Profile Chip/Dropdown CSS */
+    .user-profile {
+        position: relative; /* 드롭다운을 위한 기준점 */
+        display: flex; 
     }
-    .logout-btn:hover { transform: translateY(-1px); }
-
-    /* Firebase 사용자 정보 (예쁜 칩 스타일) */
-    #userInfo {
+    .user-chip {
+        appearance: none; border: none; outline: none; cursor: pointer;
         background: var(--panel-2);
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 999px; /* 완전 둥글게 */
-        padding: 4px 6px 4px 14px; /* 왼쪽 텍스트 공간 확보 */
-        box-shadow:var(--shadow);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 999px; 
+        padding: 6px 12px 6px 6px; 
         display: flex;
         align-items: center;
-        gap: 8px; /* 내부 요소 간격 */
+        gap: 8px;
+        box-shadow: var(--shadow);
+        transition: background 0.15s;
     }
-    #userEmail {
-        font-size: 13px;
-        font-weight: 500;
+    .user-chip:hover {
+        background: #1b2030d0; /* 약간 더 어두운 배경 */
+    }
+    /* === [수정] 아바타 스타일: 회색 배경 및 테두리 제거 === */
+    .avatar {
+        width: 32px; height: 32px; border-radius: 50%;
+        background-color: transparent; /* 회색 배경 제거 */
+        background-size: cover; 
+        background-position: center;
         color: var(--text);
-        max-width: 120px;
+        display: grid; place-items: center;
+        font-size: 16px;
+        flex-shrink: 0;
+        text-indent: -9999px; 
+        overflow: hidden;
+        border: none; /* 테두리 제거 */
+    }
+    /* === 아바타 스타일 수정 끝 === */
+    .user-chip .name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        max-width: 100px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-    /* Firebase 칩 내부의 로그아웃 버튼 */
-    #firebaseLogoutBtn {
-        /* 기존 스타일 상속 방지 */
-        appearance:none; border:none; outline:none;
-        cursor: pointer; transition: transform 0.1s;
 
-        /* 디자인 변경 */
-        padding: 4px 8px;
-        font-size: 12px;
-        font-weight: 700;
-        border-radius: 999px;
-        background: var(--danger); /* 빨간색으로 시각적 강조 */
-        color: white;
-        box-shadow: none; 
+    .user-dropdown {
+        position: absolute;
+        top: calc(100% + 10px); /* 칩 아래에 위치 */
+        right: 0;
+        width: 240px;
+        background: var(--panel);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 10px;
+        box-shadow: var(--shadow);
+        z-index: 20;
     }
+    .dropdown-header {
+        padding: 6px 0 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 10px;
+    }
+    .dropdown-name {
+        font-weight: 700;
+        font-size: 16px;
+        margin-bottom: 4px;
+    }
+    .spotify-status-badge {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        display: inline-block;
+        font-weight: 600;
+    }
+    .status-unlinked {
+        background: var(--danger);
+        color: white;
+    }
+    .status-linked {
+        background: var(--accent);
+        color: #000;
+    }
+    .dropdown-item {
+        width: 100%; text-align: left;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.1s;
+        border: none;
+        background: none;
+        color: var(--text);
+    }
+    .dropdown-item:hover {
+        background: var(--panel-2);
+    }
+    .dropdown-separator {
+        border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 8px 0;
+    }
+    .link-btn { color: var(--accent); font-weight: 700; }
+    .logout-btn { color: var(--muted); }
     /* === 인증 영역 CSS 끝 === */
 
 
@@ -323,22 +379,43 @@
       <!-- 로고 이미지로 대체 -->
       <img src="https://i.postimg.cc/430bTY3C/image.png" alt="Music Hub Logo" style="height:30px; border-radius:6px;">
     </div>
-    <!-- 인증 영역 (Spotify + Firebase) -->
+    
+    <!-- === [수정] 인증 영역 (Firebase Login + User Chip/Dropdown) === -->
     <div class="auth-area">
-      <!-- Spotify Auth -->
-      <div>
-        <button id="loginBtn" class="login-btn">Spotify 로그인</button>
-        <button id="logoutBtn" class="logout-btn hidden">Spotify 로그아웃</button>
-      </div>
-      <!-- Firebase Auth (개선된 칩 스타일) -->
-      <div id="firebaseAuthControl" style="display:flex; align-items:center;">
-        <button id="firebaseLoginBtn" class="login-btn">로그인</button> 
-        <div id="userInfo" class="hidden">
-          <span id="userEmail"></span>
-          <button id="firebaseLogoutBtn">로그아웃</button>
-        </div>
+      <!-- Firebase Login Button (Initial state) -->
+      <button id="firebaseLoginBtn" class="login-btn">로그인</button> 
+
+      <!-- Logged in Firebase User Chip/Dropdown -->
+      <div id="userProfile" class="user-profile hidden">
+          <!-- Clickable Chip -->
+          <button id="userChip" class="user-chip">
+              <!-- 아바타 (Spotify 이미지 또는 기본 아이콘) -->
+              <div id="userAvatar" class="avatar"></div> 
+              <!-- Spotify display_name 또는 Firebase UID가 표시될 이름 -->
+              <span id="userName" class="name"></span> 
+          </button>
+          
+          <!-- 드롭다운 메뉴 -->
+          <div id="userDropdown" class="user-dropdown hidden">
+              <div class="dropdown-header">
+                  <div id="dropdownName" class="dropdown-name"></div>
+                  <!-- Spotify 연결 상태 표시 -->
+                  <div id="spotifyStatus" class="spotify-status-badge status-unlinked">Spotify 미연동</div>
+              </div>
+              
+              <!-- Spotify 연동/연동 해제 버튼 (토글됨) -->
+              <button id="spotifyLinkBtn" class="dropdown-item link-btn">
+                  <span id="spotifyLinkText">Spotify 연동</span>
+              </button>
+              
+              <hr class="dropdown-separator">
+              
+              <!-- Firebase 로그아웃 버튼 -->
+              <button id="firebaseLogoutBtnDropdown" class="dropdown-item logout-btn">로그아웃</button>
+          </div>
       </div>
     </div>
+    <!-- === 인증 영역 끝 === -->
   </div>
 
   <div class="content">
@@ -441,7 +518,8 @@
     'user-library-read',
     'playlist-modify-public', 
     'playlist-modify-private',
-    'user-library-modify'
+    'user-library-modify',
+    'user-read-private' // Display Name을 위해 추가
   ].join(' ');
   // ⚠️ YouTube API Key: 403 오류 발생 시 이 값을 교체해야 합니다.
   const YT_API_KEY = 'AIzaSyDQhvZEZrTO6ZwZ7Lawnp1Qju36WHbGsLs'; 
@@ -449,6 +527,12 @@
   // 토큰/상태
   let accessToken = null;
   let expiresAt = 0;
+  
+  // NEW: 사용자 상태 관련
+  const DEFAULT_AVATAR_URL = 'https://i.postimg.cc/YCg2Zv0V/1.png'; // 기본 이미지 URL
+  let spotifyDisplayName = '';
+  let spotifyProfileImage = '';
+  let isDropdownOpen = false; // 드롭다운 상태 추적
 
   // 재생 큐
   let queue = [];
@@ -505,10 +589,15 @@
    */
   function checkAndLoadData() {
     if (currentFirebaseUser && accessToken) {
+        // Spotify 인증 완료 시에만 데이터를 로드합니다.
         setTabs('playlists');
         $('#list').setAttribute('data-current-view', 'playlists');
-        loadPlaylists(); // 데이터 로드 시작
+        loadPlaylists(); 
         return true;
+    } else if (currentFirebaseUser) {
+        // Firebase만 인증된 경우, 플레이리스트 뷰를 표시하되 데이터는 로드하지 않습니다.
+        $('#list').innerHTML = ''; // 리스트 초기화
+        setHint('Spotify 연동을 완료해야 플레이리스트를 볼 수 있습니다.');
     }
     return false;
   }
@@ -565,25 +654,100 @@
     }
   }
 
+  /**
+   * Firebase 인증 상태에 따라 UI를 업데이트합니다.
+   */
   function updateFirebaseAuthUI(user) {
-    const userInfoEl = document.getElementById('userInfo');
-    const loginBtnEl = document.getElementById('firebaseLoginBtn');
-    const userEmailEl = document.getElementById('userEmail');
+    const loginBtnEl = $('#firebaseLoginBtn');
+    const userProfileEl = $('#userProfile');
+    const userNameEl = $('#userName');
+    const dropdownNameEl = $('#dropdownName');
+    const userAvatarEl = $('#userAvatar');
 
     if (user) {
-      userInfoEl.classList.remove('hidden');
       loginBtnEl.classList.add('hidden');
-      userEmailEl.textContent = user.email || user.uid.substring(0, 8) + '...';
+      userProfileEl.classList.remove('hidden');
+
+      // Firebase 로그인 시 기본적으로 Firebase 이메일 또는 UID 표시
+      const defaultName = user.email || user.uid.substring(0, 8) + '...';
+      userNameEl.textContent = defaultName;
+      dropdownNameEl.textContent = defaultName;
+      
+      // 아바타를 기본 이미지 URL로 설정
+      userAvatarEl.style.backgroundImage = `url('${DEFAULT_AVATAR_URL}')`;
+      userAvatarEl.style.backgroundSize = 'cover';
+      userAvatarEl.textContent = ''; // 텍스트 내용 제거
+      
+      // Firebase 로그인 시 Spotify 연결 상태 업데이트 (토큰 유무에 따라)
+      updateSpotifyAuthUI(!!accessToken, spotifyDisplayName, spotifyProfileImage);
+
     } else {
-      userInfoEl.classList.add('hidden');
       loginBtnEl.classList.remove('hidden');
-      userEmailEl.textContent = '';
+      userProfileEl.classList.add('hidden');
+      
+      // Firebase 로그아웃 시 Spotify 상태도 초기화
+      spotifyUnlink();
     }
+  }
+  
+  /**
+   * Spotify 연결 상태에 따라 드롭다운 UI를 업데이트합니다.
+   * @param {boolean} isLinked Spotify가 연결되었는지 여부
+   * @param {string} displayName Spotify Display Name
+   * @param {string} profileImage Spotify Profile Image URL
+   */
+  function updateSpotifyAuthUI(isLinked, displayName = '', profileImage = '') {
+      const statusBadge = $('#spotifyStatus');
+      const linkBtn = $('#spotifyLinkBtn');
+      const linkText = $('#spotifyLinkText');
+      const userChipName = $('#userName');
+      const dropdownName = $('#dropdownName');
+      const userAvatar = $('#userAvatar');
+      
+      if (isLinked) {
+          statusBadge.classList.remove('status-unlinked');
+          statusBadge.classList.add('status-linked');
+          statusBadge.textContent = 'Spotify 연동됨';
+          
+          linkText.textContent = 'Spotify 연동 해제';
+          linkBtn.classList.add('unlink-btn');
+          
+          // 사용자 요청: Spotify Display Name 표시
+          if(displayName) {
+              userChipName.textContent = displayName;
+              dropdownName.textContent = displayName;
+          }
+          
+          // 프로필 이미지 업데이트 (Spotify 이미지 사용)
+          if(profileImage) {
+              userAvatar.style.backgroundImage = `url(${profileImage})`;
+              userAvatar.textContent = '';
+          }
+          
+      } else {
+          statusBadge.classList.remove('status-linked');
+          statusBadge.classList.add('status-unlinked');
+          statusBadge.textContent = 'Spotify 미연동';
+          
+          linkText.textContent = 'Spotify 연동';
+          linkBtn.classList.remove('unlink-btn');
+          
+          // Firebase 기본 이름으로 되돌리기
+          if(currentFirebaseUser) {
+              const defaultName = currentFirebaseUser.email || currentFirebaseUser.uid.substring(0, 8) + '...';
+              userChipName.textContent = defaultName;
+              dropdownName.textContent = defaultName;
+              // 기본 아바타 이미지로 되돌리기
+              userAvatar.style.backgroundImage = `url('${DEFAULT_AVATAR_URL}')`;
+              userAvatar.textContent = '';
+          }
+      }
   }
 
   async function firebaseLogout() {
     try {
       await signOut(auth);
+      spotifyUnlink(); // Firebase 로그아웃 시 Spotify 연동도 해제
       setError('Firebase에서 로그아웃되었습니다.');
     } catch(e) {
       setError('로그아웃 오류: ' + e.message);
@@ -618,13 +782,13 @@
   }
 
   // -------------------------
-  // 🔄 Spotify PKCE Login (Step 1) 🔄
+  // 🔄 Spotify PKCE Login (Step 1) - 연동 시작 🔄
   // -------------------------
-  async function login(){
+  // [이름 변경] login -> startSpotifyLinking
+  async function startSpotifyLinking(){ 
     setError(''); 
     
     const codeVerifier = generateRandomString(128);
-    // [유지] sessionStorage 사용
     sessionStorage.setItem('spotify_code_verifier', codeVerifier); 
     
     const codeChallenge = await generateCodeChallenge(codeVerifier);
@@ -664,8 +828,18 @@
         // URL Fragment 정리
         window.history.replaceState({}, document.title, window.location.pathname);
         
-        $('#loginBtn').classList.add('hidden');
-        $('#logoutBtn').classList.remove('hidden');
+        // [NEW] Spotify 사용자 정보 가져오기 및 UI 업데이트
+        try {
+            const me = await spotify('/me');
+            spotifyDisplayName = me.display_name || me.id;
+            // 가장 큰 이미지 URL 사용
+            spotifyProfileImage = me.images?.[0]?.url || ''; 
+            updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
+        } catch(e) {
+            console.error("Failed to fetch Spotify /me:", e);
+            // 오류 발생 시에도 토큰은 있으니 연결됨으로 표시
+            updateSpotifyAuthUI(true); 
+        }
         
         // Spotify 토큰을 성공적으로 받은 후, 데이터 로드를 시도합니다.
         checkAndLoadData();
@@ -678,17 +852,25 @@
     return false;
   }
   
-  function logout(){
+  // [이름 변경] logout -> spotifyUnlink (Spotify 연동 해제)
+  function spotifyUnlink(){
     accessToken = null; expiresAt = 0;
-    $('#loginBtn').classList.remove('hidden');
-    $('#logoutBtn').classList.add('hidden');
+    spotifyDisplayName = '';
+    spotifyProfileImage = '';
+    
+    updateSpotifyAuthUI(false); // UI 상태 업데이트
+    
     $('#list').innerHTML = '';
     modifiablePlaylists = []; // 캐시 클리어
-    setHint('로그아웃되었습니다. 다시 로그인해 주세요.');
+    setHint('Spotify 연동이 해제되었습니다.');
+    
+    // 뷰를 플레이리스트 탭으로 초기화하고, 다시 로드 (인증이 없으므로 비어 있음)
+    setTabs('playlists');
+    $('#list').setAttribute('data-current-view', 'playlists');
   }
 
   async function spotify(endpoint, params){
-    if(!accessToken || Date.now() > expiresAt){ throw new Error('인증이 만료되었습니다. 다시 로그인해 주세요.'); }
+    if(!accessToken || Date.now() > expiresAt){ throw new Error('인증이 만료되었습니다. 다시 연동해 주세요.'); }
     const url = new URL('https://api.spotify.com/v1' + endpoint);
     if(params){ Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v)); }
     const res = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
@@ -714,11 +896,9 @@
       
       if (showBackButton) {
           const backBtn = document.createElement('button');
-          backBtn.className = 'btn';
+          backBtn.className = 'logout-btn'; 
           backBtn.innerHTML = '←'; // Back arrow
           backBtn.style.marginRight = '10px';
-          // [개선] 새 플레이어 스타일 적용을 위해 일반 btn 대신 logout-btn 클래스 사용
-          backBtn.className = 'logout-btn'; 
           backBtn.style.width = '38px';
           backBtn.style.height = '38px';
           backBtn.style.borderRadius = '10px';
@@ -814,7 +994,7 @@
     }
   }
   
-  // --- 플레이리스트 추가 모달 로직 ---
+  // --- 플레이리스트 추가 모달 로직 (생략: 기존 로직 유지) ---
   
   /**
    * 사용자가 수정 가능한 플레이리스트 목록을 가져옵니다. (캐시 사용)
@@ -827,20 +1007,14 @@
     
     isPlaylistsLoading = true;
     try {
-        // me/playlists 엔드포인트는 내가 소유하거나 팔로우하는 모든 플레이리스트를 반환합니다.
         const data = await spotify('/me/playlists', { limit: 50 });
         
-        // 현재 사용자 ID
-        const currentUserSpotifyId = currentFirebaseUser?.uid; // Spotify ID는 Spotify API 호출로 가져와야 하지만, 편의상 Firebase UID를 사용한다고 가정
-
-        // 실제 Spotify User ID를 가져오는 로직 추가 (첫 로그인 시에만 실행)
         let userId = '';
         try {
             const meData = await spotify('/me');
             userId = meData.id;
         } catch(e) { /* 무시 */ }
 
-        // 내가 만들었거나 (owner.id === user.id) 또는 공동 작업 가능한 (collaborative: true) 플레이리스트를 필터링
         const finalPlaylists = (data.items || []).filter(p => p.owner?.id === userId || p.collaborative);
 
         modifiablePlaylists = finalPlaylists;
@@ -1010,10 +1184,8 @@
 
       const chip = document.createElement('span');
       chip.className = 'chip';
-      // === [개선] 칩 텍스트 변경: 뷰에 따라 더 명확하게 표시 ===
       chip.textContent = type === 'playlist' ? 'Playlist' : 
                          (type === 'search-track' ? 'Search Track' : 'Playlist Track'); 
-      // =======================================================
 
       meta.appendChild(t); meta.appendChild(s);
       card.appendChild(thumb);
@@ -1117,7 +1289,6 @@
     url.searchParams.set('maxResults','1');
     url.searchParams.set('key', YT_API_KEY);
     
-    // ⚠️ 오류 발생 시 로그 확인: 403 오류는 API 키 문제이거나 할당량을 초과했을 수 있습니다.
     console.log(`Youtube Query: ${q}`);
     
     const res = await fetch(url);
@@ -1207,14 +1378,15 @@
   async function loadPlaylists(){
     if (!currentFirebaseUser || !accessToken) {
       setHint('Firebase 및 Spotify 인증이 필요합니다.');
+      $('#list').innerHTML = ''; // 인증 안 되었으면 비우기
       return;
     }
     try{
       setHint('플레이리스트를 불러오는 중…');
-      const me = await spotify('/me');
+      // displayName은 spotifyDisplayName 변수에 이미 저장되어 있습니다.
       const data = await spotify('/me/playlists', { limit: 50 });
       renderList(data.items || [], 'playlist');
-      setHint(`${me.display_name}님의 플레이리스트 | 클릭하여 상세 트랙 보기`);
+      setHint(`${spotifyDisplayName || '사용자'}님의 플레이리스트 | 클릭하여 상세 트랙 보기`);
     }catch(e){ setError(e.message); setHint(''); }
   }
   async function loadLiked(){
@@ -1295,21 +1467,48 @@
     });
 
     // 인증 이벤트 바인딩
-    $('#loginBtn').addEventListener('click', login);
-    $('#logoutBtn').addEventListener('click', logout);
-
-    // Firebase 인증 이벤트 바인딩
+    // [유지] Firebase 로그인 버튼 바인딩
     $('#firebaseLoginBtn').addEventListener('click', () => {
       if (!currentFirebaseUser) {
+          // Firebase 로그인이 안 된 경우, /auth 페이지로 이동 (Firebase 인증)
           window.location.href = '/auth';
       }
     });
-    document.getElementById('firebaseLogoutBtn').addEventListener('click', firebaseLogout);
+
+    // === NEW Dropdown Logic ===
+    const userChip = $('#userChip');
+    const userDropdown = $('#userDropdown');
     
-    // 모달 닫기 버튼 이벤트 바인딩
-    $('#modalCloseBtn').addEventListener('click', () => {
-        $('#playlistSelectionModal').classList.add('hidden');
+    // 드롭다운 토글 기능
+    userChip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isDropdownOpen = !isDropdownOpen;
+        userDropdown.classList.toggle('hidden', !isDropdownOpen);
     });
+    // 바깥 클릭 시 드롭다운 닫기
+    document.addEventListener('click', (e) => {
+        if (!userDropdown.classList.contains('hidden') && !userChip.contains(e.target) && !userDropdown.contains(e.target)) {
+            isDropdownOpen = false;
+            userDropdown.classList.add('hidden');
+        }
+    });
+    
+    // Spotify 연동/연동 해제 버튼 바인딩
+    $('#spotifyLinkBtn').addEventListener('click', () => {
+        userDropdown.classList.add('hidden');
+        if ($('#spotifyLinkBtn').classList.contains('unlink-btn')) {
+            spotifyUnlink(); // 연동 해제
+        } else {
+            startSpotifyLinking(); // 연동 시작
+        }
+    });
+
+    // Firebase 로그아웃 버튼 바인딩 (드롭다운 내 버튼)
+    document.getElementById('firebaseLogoutBtnDropdown').addEventListener('click', () => {
+        userDropdown.classList.add('hidden');
+        firebaseLogout();
+    });
+
   }
   
   /**
@@ -1353,11 +1552,7 @@
       await handleSpotifyCallback();
       
       // 4. 초기 데이터 로드 최종 확인 (Firebase, Spotify 모두 인증된 경우)
-      const isReady = checkAndLoadData();
-      if (!isReady) {
-        // 초기 뷰를 플레이리스트로 설정
-        $('#list').setAttribute('data-current-view', 'playlists');
-      }
+      // checkAndLoadData()는 onAuthStateChanged 내부에서 호출되어 자동으로 처리됩니다.
   }
 
   window.onload = initApp;
