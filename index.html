@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -737,7 +735,6 @@
   let ytReady = false;
   let progressTimer = null;
   let currentFirebaseUser = null;
-  let auth;
   let db; 
   let currentPlaylistTracks = [];
 
@@ -1693,16 +1690,38 @@
   
   //  Improved recommendations with better seed data
   async function loadRecommendations(){
-    if (!currentFirebaseUser || !accessToken) { setError('Firebase 및 Spotify 인증이 필요합니다.'); $('#list').innerHTML = ''; return; }
+    if (!currentFirebaseUser || !accessToken) { 
+      setError('Firebase 및 Spotify 인증이 필요합니다.'); 
+      $('#list').innerHTML = '<div class="hint" style="margin:20px; padding:12px; background:var(--panel-2); border-radius:10px; color:var(--muted); text-align:center;"><i class="fas fa-lock" style="margin-right:8px; color:var(--danger);"></i>로그인이 필요합니다.</div>'; 
+      return; 
+    }
+    
     try{
       $('#list').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">추천 트랙 로드 중...</p></div>`;
       
+      console.log('[v0] Starting recommendation fetch...');
+      
       // Fetch user's top artists and tracks
       const [topArtists, topTracks, recentTracks] = await Promise.all([
-          spotify('/me/top/artists', { limit: 10, time_range: 'short_term' }).catch(() => ({ items: [] })),
-          spotify('/me/top/tracks', { limit: 10, time_range: 'short_term' }).catch(() => ({ items: [] })),
-          spotify('/me/player/recently-played', { limit: 20 }).catch(() => ({ items: [] }))
+          spotify('/me/top/artists', { limit: 10, time_range: 'short_term' }).catch(err => {
+            console.log('[v0] Top artists fetch failed:', err);
+            return { items: [] };
+          }),
+          spotify('/me/top/tracks', { limit: 10, time_range: 'short_term' }).catch(err => {
+            console.log('[v0] Top tracks fetch failed:', err);
+            return { items: [] };
+          }),
+          spotify('/me/player/recently-played', { limit: 20 }).catch(err => {
+            console.log('[v0] Recent tracks fetch failed:', err);
+            return { items: [] };
+          })
       ]);
+      
+      console.log('[v0] Fetched data:', { 
+        topArtists: topArtists.items?.length || 0, 
+        topTracks: topTracks.items?.length || 0,
+        recentTracks: recentTracks.items?.length || 0
+      });
       
       const seedArtists = new Set();
       const seedTracks = new Set();
@@ -1750,10 +1769,24 @@
           params.seed_genres = 'pop,rock';
       }
       
+      console.log('[v0] Recommendation params:', params);
+      
       const rec = await spotify('/recommendations', params);
+      
+      console.log('[v0] Recommendations received:', rec.tracks?.length || 0);
+      
+      if (!rec.tracks || rec.tracks.length === 0) {
+        $('#list').innerHTML = '<div class="hint" style="margin:20px; padding:12px; background:var(--panel-2); border-radius:10px; color:var(--muted); text-align:center;">추천 트랙을 찾을 수 없습니다.</div>';
+        return;
+      }
+      
       renderSearchTracks(rec.tracks || [], $('#list')); 
       
-    }catch(e){ setError('추천 트랙 로드 오류: ' + e.message); }
+    }catch(e){ 
+      console.error('[v0] Recommendation error:', e);
+      setError('추천 트랙 로드 오류: ' + e.message); 
+      $('#list').innerHTML = '<div class="hint" style="margin:20px; padding:12px; background:var(--panel-2); border-radius:10px; color:var(--danger); text-align:center;"><i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>' + e.message + '</div>';
+    }
   }
   
   // -------------------------
@@ -2127,13 +2160,28 @@
   // 🚀 애플리케이션 초기화 🚀
   // -------------------------
 
-  async function initApp() {
-      await initializeFirebase(); 
-      setupTabListeners();
-      setupPlayerControls();
-      await handleSpotifyCallback();
-      
-      navigateTo('home');
+  function initApp() {
+      //  Ensure Firebase and YouTube API scripts are loaded before initializing
+      const firebaseScript = document.createElement('script');
+      firebaseScript.src = "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+      firebaseScript.onload = () => {
+          const firebaseAuthScript = document.createElement('script');
+          firebaseAuthScript.src = "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+          firebaseAuthScript.onload = () => {
+              const firebaseFirestoreScript = document.createElement('script');
+              firebaseFirestoreScript.src = "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+              firebaseFirestoreScript.onload = async () => {
+                  await initializeFirebase(); 
+                  setupTabListeners();
+                  setupPlayerControls();
+                  await handleSpotifyCallback();
+                  navigateTo('home');
+              };
+              document.body.appendChild(firebaseFirestoreScript);
+          };
+          document.body.appendChild(firebaseAuthScript);
+      };
+      document.body.appendChild(firebaseScript);
   }
 
   window.onload = initApp;
