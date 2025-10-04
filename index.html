@@ -1,11 +1,31 @@
-
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>Music Hub — 플레이리스트 재생기</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rivave - 광고 없고 합법적인 무료 음악 스트리밍.</title>
+    
+    <link rel="icon" type="image/png" href="/image/favicon.png">
+
+    <meta name="description" content="Rivave에서 광고 없이 합법적으로 수백만 곡의 음악을 무료로 스트리밍하세요. 고품질 음원, 개인 맞춤형 플레이리스트를 만나보세요.">
+    <meta name="author" content="Rivave">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Rivave">
+    <meta property="og:title" content="Rivave - 광고 없고 합법적인 무료 음악 스트리밍">
+    <meta property="og:description" content="Rivave에서 광고 없이 합법적으로 수백만 곡의 음악을 무료로 스트리밍하세요.">
+    <meta property="og:url" content="https://play.nmate.kr">
+    <meta property="og:image" content="https://play.nmate.kr/og.png"> 
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@Rivave">
+    <meta name="twitter:title" content="Rivave - 광고 없이 합법적인 무료 음악 스트리밍">
+    <meta name="twitter:description" content="광고 없는 무료 음악 스트리밍! Rivave에서 지금 바로 시작하세요.">
+    <meta name="twitter:image" content="https://play.nmate.kr/og.png">
+</head>
     <!-- Font Awesome 아이콘 로드 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -536,7 +556,7 @@
     <div class="appbar">
         <!--  Logo image -->
         <div class="brand">
-            <img src="https://play.nmate.kr/image/logo.png" alt="Music Hub Logo">
+            <img src="https://play.nmate.kr/image/logo.png" alt="Rivave 로고">
         </div>
         
         <div class="auth-area">
@@ -1831,9 +1851,9 @@
       ] : [];
       
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: trackInfo.title || '제목 없음',
-        artist: trackInfo.artists || '알 수 없는 아티스트',
-        album: trackInfo.album || 'Music Hub',
+        title: trackInfo.title || 'Rivave에서 재생 대기중인 곡',
+        artist: trackInfo.artists || 'Rivave에서 재생 대기중인 곡',
+        album: trackInfo.album || 'Rivave에서 재생 대기중인 곡',
         artwork: artwork
       });
 
