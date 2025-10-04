@@ -1474,7 +1474,7 @@
       else if (tabKey === 'rec') loadRecommendations();
   }
 
-  function loadExternalPage(path, title) {
+  async function loadExternalPage(path, title) {
     const listContainer = $('#list');
     listContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">콘텐츠 로드 중...</p></div>`;
     setViewHeader(title, false);
@@ -1529,23 +1529,6 @@
     } catch (e) {
         listContainer.innerHTML = `<div style="text-align:center; padding: 40px; border:1px solid var(--danger); border-radius:12px; margin:20px 0;"><p style="color:var(--danger); font-weight:700; font-size:1.1em;">페이지 로드 오류: ${title}</p><p class="text-sm mt-2" style="color:var(--muted);">파일(${path})에 접근할 수 없습니다. (에러: ${e.message})</p><p class="text-sm mt-1" style="color:var(--muted);">파일을 생성하거나 경로를 확인해 주세요.</p></div>`;
         setError(`페이지 로드 오류: ${title}`);
-    }
-  }
-
-  function navigateTo(view) {
-    currentPageView = view;
-    $$('.nav-item').forEach(btn => btn.classList.remove('active'));
-    $(`#nav${view.charAt(0).toUpperCase() + view.slice(1)}`).classList.add('active');
-
-    $$('.controls .pill').forEach(p => p.classList.toggle('hidden', view !== 'home'));
-    
-    if (view === 'home') {
-        setHomeTabs(currentHomeTab);
-        loadHomeContent(currentHomeTab);
-    } else if (view === 'search') {
-        renderSearchPage();
-    } else if (view === 'library') {
-        loadExternalPage('my.html', '나의 보관함');
     }
   }
 
@@ -2336,10 +2319,9 @@
   // -------------------------
 
   function initApp() {
-      init
+      setupTabListeners();
+      setupPlayerControls();
       initializeFirebase().then(() => {
-          setupTabListeners();
-          setupPlayerControls();
           handleSpotifyCallback().then(() => {
               navigateTo('home');
           });
