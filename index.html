@@ -1,9 +1,12 @@
+
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>Music Hub — 플레이리스트 재생기</title>
+    <!-- Font Awesome 아이콘 로드 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root{
@@ -24,6 +27,8 @@
             overflow:hidden;
         }
         
+        /* ... existing code ... */
+
         .appbar{
             position:sticky; top:0; z-index:10;
             display:flex; align-items:center; justify-content:space-between;
@@ -40,6 +45,8 @@
             object-fit: contain;
         }
         
+        /* ... existing code ... */
+
         .auth-area { display: flex; align-items: center; gap: 12px; }
         .login-btn{
             appearance:none; border:none; outline:none; font-weight:700;
@@ -49,7 +56,7 @@
         .login-btn:hover { transform: translateY(-1px); }
         .user-profile { position: relative; display: flex; }
         .user-chip {
-            appearance: none; border: none; outline:none; cursor: pointer; background: var(--panel-2);
+            appearance: none; border: none; outline: none; cursor: pointer; background: var(--panel-2);
             border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 6px 12px 6px 6px; 
             display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow); transition: background 0.15s;
         }
@@ -80,8 +87,9 @@
         .dropdown-separator { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 8px 0; }
         .link-btn { color: var(--accent); font-weight: 700; }
         .logout-btn { color: var(--muted); }
-        .unlink-btn { color: var(--danger) !important; }
         
+        /* ... existing code ... */
+
         .container{ 
             display:grid; 
             grid-template-rows:auto 1fr auto auto; 
@@ -94,6 +102,8 @@
             overflow: hidden; 
         }
         
+        /* ... existing code ... */
+
         .controls{ 
             display:flex; gap:10px; align-items:center; overflow:auto; padding:4px 2px; margin-bottom:8px; 
         }
@@ -102,6 +112,8 @@
             border:1px solid rgba(255,255,255,0.06); color:var(--muted); font-size:13px; cursor:pointer;
         }
         .pill.active{ background:#1ed76022; color:var(--text); border-color:#1ed76055 }
+
+        /* ... existing code ... */
 
         .grid{ overflow:auto; padding-bottom:12px; }
         #currentViewHeader{ font-weight:700; margin:6px 6px 10px; color:#dbe3ff; font-size:16px; display:flex; align-items:center; padding:4px 0; }
@@ -115,6 +127,8 @@
         }
         .card:hover{ transform:translateY(-1px); border-color:#1ed76055; background:var(--panel) }
         
+        /* ... existing code ... */
+
         .thumb{
             width:52px; height:52px; border-radius:8px; background:#222837; flex:0 0 52px; overflow:hidden; display:grid; place-items:center; color:#7f8bad;
             border:1px solid rgba(255,255,255,0.06);
@@ -124,6 +138,8 @@
         .subtitle{ color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
         .chip{ font-size:11px; color:#a7b0c6; background:#22283a; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,0.06); }
         
+        /* ... existing code ... */
+
         .track-row {
             display: flex; align-items: center; justify-content: space-between;
             padding: 10px 14px; margin: 4px 6px; border-radius: 10px;
@@ -147,6 +163,8 @@
             .track-row { padding: 8px 10px; }
         }
         
+        /* ... existing code ... */
+
         .search-wrapper {
             display: flex; gap: 10px; padding: 12px 6px; 
             position: sticky; top: 0; z-index: 1; 
@@ -167,6 +185,8 @@
             box-shadow: 0 4px 15px rgba(30,215,96,0.4);
         }
         #searchBtn:hover { opacity: 0.9; transform: scale(1.05); }
+
+        /* ... existing code ... */
 
         .player-bar-container { 
             position: fixed; left: 0; right: 0; bottom: 65px; 
@@ -463,6 +483,8 @@
             cursor: pointer;
         }
 
+        /* ... existing code ... */
+
         .nav-bar-container {
             position: fixed; left: 0; right: 0; bottom: 0; height: 65px; z-index: 101; 
             background: #000000; box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.8); 
@@ -479,6 +501,8 @@
         .nav-item.active { color: var(--text); }
         .nav-item.active .icon-wrapper { background: #1ed76025; border-radius: 999px; box-shadow: 0 0 10px rgba(30, 215, 96, 0.2); }
         .nav-item.active i { color: var(--accent); }
+
+        /* ... existing code ... */
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
@@ -497,28 +521,12 @@
             border: 1px solid var(--panel-2); border-radius: 10px;
         }
         
+        /* ... existing code ... */
+
         .hidden{ display:none !important }
         .err{ color:var(--danger); font-size:12px; margin:8px 6px 0 }
         .grid::-webkit-scrollbar, .content::-webkit-scrollbar { width:8px; height:8px }
         .grid::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb { background:#2a3246; border-radius:999px }
-
-        /*  Tabs added */
-        .tabs {
-            display: flex; gap: 10px; align-items: center; overflow: auto; 
-            padding: 4px 2px; margin-bottom: 8px;
-            /* Inherited from .controls */
-        }
-        .tab-btn {
-            white-space: nowrap; padding: 8px 12px; border-radius: 999px; background: var(--panel);
-            border: 1px solid rgba(255, 255, 255, 0.06); color: var(--muted); font-size: 13px; cursor: pointer;
-            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .tab-btn:hover { background: var(--panel-2); }
-        .tab-btn.active { background: #1ed76022; color: var(--text); border-color: #1ed76055; }
-        .tab-btn.active:hover { background: #1ed76033; } /* Slightly darker on hover when active */
-        
-        .hint { color: var(--muted); text-align: center; padding: 20px; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -526,6 +534,7 @@
 <div class="container" id="mainContainer">
 
     <div class="appbar">
+        <!--  Logo image -->
         <div class="brand">
             <img src="https://play.nmate.kr/image/logo.png" alt="Music Hub Logo">
         </div>
@@ -566,7 +575,7 @@
         <div id="list" class="grid" role="list" data-current-view="playlists"></div>
     </div>
 
-     미니 플레이어 바 
+    <!-- 미니 플레이어 바 -->
     <div class="player-bar-container" id="playerBarContainer"> 
         <div id="progressBar"></div> 
         <div class="player">
@@ -586,7 +595,7 @@
         <div id="hiddenPlayerControls" class="hidden"></div>
     </div>
 
-     하단 내비게이션 바 
+    <!-- 하단 내비게이션 바 -->
     <div class="nav-bar-container">
         <button id="navHome" class="nav-item active">
             <div class="icon-wrapper">
@@ -609,13 +618,14 @@
     </div>
 </div>
 
- 전체 화면 재생기 (Now Playing View) 
+<!-- 전체 화면 재생기 (Now Playing View) -->
 <div id="nowPlayingView" class="now-playing-view">
     <div class="npv-header">
         <button id="npvCloseBtn" class="npv-close-btn">
             <i class="fas fa-chevron-down"></i>
         </button>
         <span class="npv-title-label">현재 재생 중</span>
+        <!--  Lyrics toggle button -->
         <button id="npvLyricsToggle" class="npv-lyrics-toggle">
             <i class="fas fa-music"></i>
             <span id="npvLyricsToggleText">가사</span>
@@ -625,6 +635,7 @@
     <div class="npv-content">
         <div class="npv-album-art-wrapper">
             <div id="npvAlbumArt">🎶</div>
+            <!--  Lyrics container -->
             <div id="npvLyricsContainer" class="npv-lyrics-container">
                 <div class="lyrics-loading">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -658,7 +669,7 @@
         <div class="npv-secondary-controls">
             <button id="npvShuffleBtn" class="btn"><i class="fas fa-random"></i></button>
             <span id="npvQueueLengthText" style="font-size:14px; color:var(--text); font-weight:600;">큐: 0/0곡</span>
-              Volume button with popup slider 
+            <!--  Volume button with popup slider -->
             <div style="position:relative;">
                 <button id="npvVolumeBtn" class="btn"><i id="npvVolumeIcon" class="fas fa-volume-up"></i></button>
                 <div id="volumePopup" class="volume-popup">
@@ -669,6 +680,7 @@
     </div>
 </div>
 
+<!-- 플레이리스트 선택 모달 -->
 <div id="playlistSelectorModal" class="modal-overlay">
     <div class="modal-content">
         <h3 class="text-xl font-bold mb-4" style="font-size:1.4em; font-weight:800; color:var(--text);">플레이리스트 선택</h3>
@@ -684,6 +696,7 @@
 </div>
 
 
+<!-- YouTube IFrame API & Application Logic -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -711,9 +724,6 @@
   const YT_API_KEY = 'AIzaSyDaJlMOdY2Pd0Cv-vkMf8fiu_7LdSCBu4k'; 
   const DEFAULT_AVATAR_URL = 'https://i.postimg.cc/YCg2Zv0V/1.png'; 
   const CACHE_EXPIRY_DAYS = 30; 
-  
-  //  Added token refresh buffer (5 minutes before expiry)
-  const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
   
   let accessToken = null;
   let refreshToken = null;
@@ -745,101 +755,6 @@
   let currentLyrics = [];
   let lyricsMode = false;
   let currentTrackForLyrics = null;
-  
-  //  Added token refresh timer
-  let tokenRefreshTimer = null;
-
-  let favorites = [];
-
-  // Load favorites from localStorage
-  function loadFavorites() {
-    try {
-      const stored = localStorage.getItem('spotify_favorites');
-      favorites = stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      console.error('[v0] Error loading favorites:', e);
-      favorites = [];
-    }
-  }
-
-  // Save favorites to localStorage
-  function saveFavorites() {
-    try {
-      localStorage.setItem('spotify_favorites', JSON.stringify(favorites));
-    } catch (e) {
-      console.error('[v0] Error saving favorites:', e);
-    }
-  }
-
-  // Check if a track is favorited
-  function isFavorited(trackId) {
-    return favorites.some(fav => fav.id === trackId);
-  }
-
-  // Add track to favorites
-  function addToFavorites(track) {
-    if (!isFavorited(track.id)) {
-      const favoriteTrack = {
-        id: track.id,
-        name: track.name,
-        artists: track.artists,
-        album: track.album,
-        uri: track.uri,
-        addedAt: new Date().toISOString()
-      };
-      favorites.unshift(favoriteTrack);
-      saveFavorites();
-      setError(`❤️ '${track.name.substring(0, 20)}...'을(를) 즐겨찾기에 추가했습니다.`);
-      return true;
-    }
-    return false;
-  }
-
-  // Remove track from favorites
-  function removeFromFavorites(trackId) {
-    const index = favorites.findIndex(fav => fav.id === trackId);
-    if (index !== -1) {
-      const removed = favorites.splice(index, 1)[0];
-      saveFavorites();
-      setError(`💔 '${removed.name.substring(0, 20)}...'을(를) 즐겨찾기에서 제거했습니다.`);
-      return true;
-    }
-    return false;
-  }
-
-  // Toggle favorite status
-  function toggleFavorite(track) {
-    if (isFavorited(track.id)) {
-      removeFromFavorites(track.id);
-    } else {
-      addToFavorites(track);
-    }
-  }
-
-  // Load and display favorites
-  async function loadFavoritesView() {
-    if (!currentFirebaseUser || !accessToken) { 
-      setError('Firebase 및 Spotify 인증이 필요합니다.'); 
-      $('#list').innerHTML = ''; 
-      return; 
-    }
-    
-    if (favorites.length === 0) {
-      $('#list').innerHTML = `
-        <div class="hint" style="margin:12px; color:var(--muted); text-align:center; padding: 40px;">
-          <i class="fas fa-heart" style="font-size: 3em; opacity: 0.3; margin-bottom: 16px;"></i>
-          <p>저장된 즐겨찾기가 없습니다.</p>
-          <p style="font-size: 0.9em; margin-top: 8px;">추천 트랙에서 ❤️ 버튼을 눌러 즐겨찾기를 추가하세요.</p>
-        </div>
-      `;
-      return;
-    }
-    
-    renderSearchTracks(favorites, $('#list'));
-  }
-
-  // Initialize favorites on load
-  loadFavorites();
 
 
   // -------------------------
@@ -932,17 +847,14 @@
                 refreshToken = data.spotify_refresh_token || null;
                 expiresAt = data.expires_at;
                 
-                //  Check if token needs refresh (with buffer)
-                if (Date.now() > (expiresAt - TOKEN_REFRESH_BUFFER_MS) && refreshToken) {
+                // Check if token is expired
+                if (Date.now() > expiresAt && refreshToken) {
                     await refreshSpotifyToken();
                 } else if (Date.now() > expiresAt) {
                     // Token expired and no refresh token
                     spotifyUnlink();
                     return;
                 }
-                
-                //  Start auto-refresh timer
-                startTokenRefreshTimer();
                 
                 // Load Spotify profile
                 try {
@@ -962,40 +874,13 @@
     }
   }
   
-  //  Added automatic token refresh timer
-  function startTokenRefreshTimer() {
-    // Clear existing timer
-    if (tokenRefreshTimer) {
-        clearTimeout(tokenRefreshTimer);
-        tokenRefreshTimer = null;
-    }
-    
-    if (!refreshToken || !expiresAt) return;
-    
-    // Calculate time until refresh (5 minutes before expiry)
-    const timeUntilRefresh = (expiresAt - TOKEN_REFRESH_BUFFER_MS) - Date.now();
-    
-    if (timeUntilRefresh > 0) {
-        console.log(`[v0] Token refresh scheduled in ${Math.floor(timeUntilRefresh / 1000 / 60)} minutes`);
-        tokenRefreshTimer = setTimeout(async () => {
-            console.log('[v0] Auto-refreshing token...');
-            await refreshSpotifyToken();
-        }, timeUntilRefresh);
-    } else {
-        // Token already needs refresh
-        refreshSpotifyToken();
-    }
-  }
-  
   async function refreshSpotifyToken() {
     if (!refreshToken) {
-        console.error('[v0] No refresh token available');
         spotifyUnlink();
         return;
     }
     
     try {
-        console.log('[v0] Refreshing Spotify token...');
         const response = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
             headers: {
@@ -1016,16 +901,11 @@
         accessToken = data.access_token;
         expiresAt = Date.now() + (data.expires_in * 1000);
         
-        //  Update refresh token if provided
         if (data.refresh_token) {
             refreshToken = data.refresh_token;
         }
         
         await saveTokensToFirestore(accessToken, refreshToken, expiresAt);
-        
-        //  Restart refresh timer
-        startTokenRefreshTimer();
-        
         console.log('[v0] Token refreshed successfully');
         
     } catch (e) {
@@ -1090,73 +970,32 @@
     window.location.href = authUrl.toString();
   }
 
-  //  Updated to use Authorization Code Flow instead of Implicit Grant
   async function handleSpotifyCallback(){
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
+    const urlParams = new URLSearchParams(window.location.hash.substring(1));
+    const token = urlParams.get('access_token');
+    const expiry = urlParams.get('expires_in');
     
-    if (!code) return false;
+    if (new URLSearchParams(window.location.search).get('code')) window.history.replaceState({}, document.title, window.location.pathname);
     
-    const codeVerifier = sessionStorage.getItem('spotify_code_verifier');
-    if (!codeVerifier) {
-        setError('인증 오류: code_verifier를 찾을 수 없습니다.');
-        return false;
-    }
-    
-    try {
-        // Exchange code for tokens
-        const response = await fetch('https://accounts.spotify.com/api/token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: new URLSearchParams({
-                grant_type: 'authorization_code',
-                code: code,
-                redirect_uri: SPOTIFY_REDIRECT_URI,
-                client_id: SPOTIFY_CLIENT_ID,
-                code_verifier: codeVerifier
-            })
-        });
+    if (token) {
+        accessToken = token;
+        expiresAt = Date.now() + (parseInt(expiry, 10) * 1000); 
         
-        if (!response.ok) {
-            throw new Error('Token exchange failed');
-        }
-        
-        const data = await response.json();
-        accessToken = data.access_token;
-        refreshToken = data.refresh_token; //  Now we get refresh_token!
-        expiresAt = Date.now() + (data.expires_in * 1000);
-        
-        // Clean up
-        sessionStorage.removeItem('spotify_code_verifier');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Save tokens to Firestore
+        //  Save tokens to Firestore
         await saveTokensToFirestore(accessToken, refreshToken, expiresAt);
         
-        //  Start auto-refresh timer
-        startTokenRefreshTimer();
-        
-        // Load Spotify profile
+        window.history.replaceState({}, document.title, window.location.pathname);
         try {
             const me = await spotify('/me');
             spotifyDisplayName = me.display_name || me.id;
             spotifyProfileImage = me.images?.[0]?.url || ''; 
             updateSpotifyAuthUI(true, spotifyDisplayName, spotifyProfileImage);
             await loadPlaylists(false); 
-        } catch(e) { 
-            updateSpotifyAuthUI(true); 
-        }
-        
+        } catch(e) { updateSpotifyAuthUI(true); }
         if (currentPageView === 'home') loadHomeContent(currentHomeTab);
         return true;
-        
-    } catch (e) {
-        console.error('[v0] Spotify callback error:', e);
-        setError('Spotify 인증 오류: ' + e.message);
-        return false;
     }
+    return false;
   }
   
   function spotifyUnlink(){
@@ -1168,23 +1007,13 @@
     userPlaylists = []; 
     allPlaylistsLoaded = false;
     currentPlaylistTracks = [];
-    favorites = []; // Clear favorites on unlink
-    saveFavorites(); // Save empty favorites
-    
-    //  Clear refresh timer
-    if (tokenRefreshTimer) {
-        clearTimeout(tokenRefreshTimer);
-        tokenRefreshTimer = null;
-    }
-    
     updateSpotifyAuthUI(false); 
     if (currentPageView === 'home') loadHomeContent(currentHomeTab);
   }
 
-  //  Enhanced spotify() function with automatic token refresh and retry
-  async function spotify(endpoint, params, options = {}, retryCount = 0){
-    // Check token expiry and refresh if needed (with buffer)
-    if(!accessToken || Date.now() > (expiresAt - TOKEN_REFRESH_BUFFER_MS)){ 
+  async function spotify(endpoint, params, options = {}){
+    //  Check token expiry and refresh if needed
+    if(!accessToken || Date.now() > expiresAt){ 
         if (refreshToken) {
             await refreshSpotifyToken();
             if (!accessToken) {
@@ -1211,16 +1040,6 @@
             ...options.headers 
         } 
     });
-    
-    //  Handle 401 errors with token refresh and retry
-    if (res.status === 401 && retryCount === 0 && refreshToken) {
-        console.log('[v0] Got 401, refreshing token and retrying...');
-        await refreshSpotifyToken();
-        if (accessToken) {
-            // Retry the request once
-            return spotify(endpoint, params, options, retryCount + 1);
-        }
-    }
     
     if(!res.ok){
       const t = await res.text().catch(()=> '');
@@ -1468,7 +1287,7 @@
       $('#list').setAttribute('data-current-view', tabKey);
       
       if (tabKey === 'playlists') loadPlaylists(true); 
-      else if (tabKey === 'liked') loadFavoritesView(); // Changed from loadLiked()
+      else if (tabKey === 'liked') loadLiked();
       else if (tabKey === 'rec') loadRecommendations();
   }
 
@@ -1525,7 +1344,7 @@
         });
 
     } catch (e) {
-        listContainer.innerHTML = `<div style="text-align:center; padding: 40px; border:1px solid var(--danger); border-radius:12px; margin:20px 0;"><p style="color:var(--danger); font-weight:700; font-size:1.1em;">페이지 로드 오류: ${title}</p><p class="text-sm mt-2" style="color:var(--muted);">파일(${path})에 접근할 수 없습니다. (에러: ${e.message})</p><p class="text-sm mt-1" style="color:var(--muted);">파일을 생성하거나 경로를 확인해 주세요.</p></div>`;
+        listContainer.innerHTML = `<div style="text-align:center; padding: 40px; border:1px solid var(--danger); border-radius:12px; margin:20px 0;"><p style="color:var(--danger); font-weight:700; font-size:1.1em;">페이지 로드 오류: ${title}</p><p class="text-sm mt-2" style="color:var(--muted);">페이지 파일(${path})에 접근할 수 없습니다. (에러: ${e.message})</p><p class="text-sm mt-1" style="color:var(--muted);">파일을 생성하거나 경로를 확인해 주세요.</p></div>`;
         setError(`페이지 로드 오류: ${title}`);
     }
   }
@@ -1610,7 +1429,7 @@
     try {
         const data = await spotify('/search', { q: query, type: 'track', limit: 50 });
         const tracks = data.tracks?.items || [];
-        renderSearchTracks(tracks, $('#searchResults')); 
+        renderSearchTracks(tracks); 
     } catch (e) {
         setError('검색 오류: ' + e.message);
         resultsContainer.innerHTML = '';
@@ -1660,31 +1479,6 @@
 
         const actions = document.createElement('div');
         actions.className = 'track-actions'; 
-        
-        const favoriteBtn = document.createElement('button');
-        favoriteBtn.className = 'action-btn';
-        const isFav = isFavorited(it.id);
-        favoriteBtn.innerHTML = isFav 
-          ? '<i class="fas fa-heart" style="color: #ff4444;"></i>' 
-          : '<i class="far fa-heart"></i>';
-        favoriteBtn.title = isFav ? '즐겨찾기 제거' : '즐겨찾기 추가';
-        favoriteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleFavorite(it);
-            // Update button appearance
-            const nowFav = isFavorited(it.id);
-            favoriteBtn.innerHTML = nowFav 
-              ? '<i class="fas fa-heart" style="color: #ff4444;"></i>' 
-              : '<i class="far fa-heart"></i>';
-            favoriteBtn.title = nowFav ? '즐겨찾기 제거' : '즐겨찾기 추가';
-            
-            // If we're in the favorites view, refresh it
-            const currentView = $('#list').getAttribute('data-current-view');
-            if (currentView === 'favorites' && !nowFav) {
-              loadFavoritesView();
-            }
-        });
-        actions.appendChild(favoriteBtn);
         
         const queueAddBtn = document.createElement('button');
         queueAddBtn.className = 'action-btn hide-on-mobile'; 
@@ -1770,8 +1564,8 @@
   }
 
   async function addTrackToPlaylist(playlistId, trackUri, playlistName, trackName) {
-    if (!accessToken) { 
-        setError('Spotify 인증이 필요합니다.'); 
+    if (!accessToken || Date.now() > expiresAt) { 
+        setError('Spotify 인증이 만료되었습니다. 다시 연동해 주세요.'); 
         return; 
     }
 
@@ -1887,7 +1681,7 @@
     }catch(e){ setError(e.message); }
   }
   
-  async function loadLiked(){ // This function is now superseded by loadFavoritesView
+  async function loadLiked(){
     if (!currentFirebaseUser || !accessToken) { setError('Firebase 및 Spotify 인증이 필요합니다.'); $('#list').innerHTML = ''; return; }
     try{
       $('#list').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--accent);"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-4 text-sm">좋아요한 트랙 로드 중...</p></div>`;
@@ -2225,7 +2019,7 @@
 
   function setupTabListeners() {
       $('#tabPlaylists').addEventListener('click', () => loadHomeContent('playlists'));
-      $('#tabLiked').addEventListener('click', () => loadHomeContent('liked')); // Changed to loadLiked
+      $('#tabLiked').addEventListener('click', () => loadHomeContent('liked'));
       $('#tabRec').addEventListener('click', () => loadHomeContent('rec'));
 
       $('#navHome').addEventListener('click', () => navigateTo('home'));
@@ -2333,14 +2127,13 @@
   // 🚀 애플리케이션 초기화 🚀
   // -------------------------
 
-  function initApp() {
-      initializeFirebase().then(() => {
-          setupTabListeners();
-          setupPlayerControls();
-          handleSpotifyCallback().then(() => {
-              navigateTo('home');
-          });
-      });
+  async function initApp() {
+      await initializeFirebase(); 
+      setupTabListeners();
+      setupPlayerControls();
+      await handleSpotifyCallback();
+      
+      navigateTo('home');
   }
 
   window.onload = initApp;
