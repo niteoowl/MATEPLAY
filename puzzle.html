@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스트레스 해소 색깔 연결 퍼즐</title>
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        :root {
+            --primary-color: #4f46e5; /* Tailwind indigo-600 */
+            --background-color: #1f2937; /* Tailwind gray-800 */
+            --grid-line-color: #374151; /* Tailwind gray-700 */
+            --text-color: #f3f4f6; /* Tailwind gray-100 */
+            --success-color: #10b981; /* Tailwind emerald-500 */
+            --error-color: #ef4444; /* Tailwind red-500 */
+        }
+
+        body {
+            font-family: 'Jua', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            background: #374151; /* gray-700 */
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 50px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        h1 {
+            color: var(--text-color);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #level-info {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #a8a29e; /* gray-400 */
+        }
+
+        #game-board {
+            display: grid;
+            gap: 1px;
+            background-color: var(--grid-line-color);
+            border: 4px solid var(--grid-line-color);
+            border-radius: 12px;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .cell {
+            background-color: #4b5563; /* gray-600 */
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.1s ease-out, transform 0.05s ease-out, box-shadow 0.1s ease-out;
+            will-change: background-color, transform, box-shadow, opacity;
+            border-radius: 4px;
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .cell.start-end {
+            border: 3px solid var(--text-color);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .cell[data-color] {
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .cell[data-color]::after {
+            content: '';
+            position: absolute;
+            width: 40%;
+            height: 40%;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        /* 폭발 애니메이션 정의 */
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+            100% { transform: scale(2.5); opacity: 0; box-shadow: 0 0 50px rgba(255, 255, 255, 1); }
+        }
+
+        .cell.exploding {
+            animation: explode 0.5s ease-out forwards;
+        }
+
+        /* 컨트롤 영역 */
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-button {
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            background-color: var(--primary-color);
+            color: var(--text-color);
+        }
+        
+        .action-button:hover {
+            background-color: #6366f1; /* indigo-500 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .action-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        #message {
+            margin-top: 15px;
+            height: 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--success-color);
+            transition: opacity 0.3s ease;
+        }
+        
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 500px) {
+            .container {
+                padding: 15px;
+                border-radius: 15px;
+            }
+            h1 {
+                font-size: 1.8rem;
+            }
+            .action-button {
+                padding: 10px 18px;
+                font-size: 1rem;
+            }
+            .controls {
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="container">
+        <h1>✨ 스트레스 해소 컬러 플로우 퍼즐</h1>
+        <div id="level-info">Level 1 (7x7)</div>
+        <div id="game-board">
+            <!-- 그리드 셀이 여기에 생성됩니다 -->
+        </div>
+        <div id="message"></div>
+        <div class="controls">
+            <button class="action-button" onclick="resetLevel()">다시 시작</button>
+            <button class="action-button" onclick="nextLevel()">다음 레벨</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 전역 변수 설정 ---
+        const boardElement = document.getElementById('game-board');
+        const levelInfoElement = document.getElementById('level-info');
+        const messageElement = document.getElementById('message');
+        const confettiCanvas = document.getElementById('confetti-canvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+        
+        var N; // 그리드 크기 (NxN)
+        var level = 1;
+        var board; // 2D 배열로 게임 상태 저장 (플레이어 퍼즐 상태)
+        var colors; // 현재 레벨에서 사용되는 색상 목록 (HSL 코드)
+        var paths; // 각 색상별 경로 (배열 of 좌표, 플레이어 경로)
+        var endpoints; // 각 색상의 시작/끝 좌표
+        
+        var isDrawing = false;
+        var currentPathColor = null;
+        var currentPath = [];
+        var confettiParticles = [];
+
+        // HSL 색상 (시각적으로 선명하고 대비가 강한 색상 세트) - 최대 15개 색상 지원을 위해 확장
+        const COLOR_SET = [
+            'hsl(0, 90%, 60%)',    // 1. Red
+            'hsl(120, 80%, 50%)',  // 2. Green
+            'hsl(40, 95%, 60%)',   // 3. Orange
+            'hsl(240, 90%, 60%)',  // 4. Blue
+            'hsl(300, 80%, 60%)',  // 5. Magenta
+            'hsl(180, 80%, 60%)',  // 6. Cyan
+            'hsl(60, 95%, 60%)',   // 7. Yellow
+            'hsl(280, 90%, 40%)',  // 8. Violet
+            'hsl(30, 90%, 50%)',   // 9. Dark Orange
+            'hsl(210, 70%, 50%)',  // 10. Sky Blue
+            'hsl(330, 70%, 55%)',  // 11. Pink
+            'hsl(90, 70%, 40%)',   // 12. Lime Green
+            'hsl(270, 60%, 40%)',  // 13. Deep Purple
+            'hsl(150, 70%, 40%)',  // 14. Sea Green
+            'hsl(20, 90%, 45%)',   // 15. Brownish Orange
+        ];
+        
+        // --- 사용자님이 직접 설계해주신 60단계 난이도 데이터 ---
+        
+        // 이전 버전의 L1 ~ L9 (난이도 점진적 상승)
+        const MANUAL_LEVELS_DATA_L1_L9 = [
+            // Level 1: 7x7, 5 Colors
+            { N: 7, colors: 5, endpoints: [
+                [[0, 0], [6, 6]], [[0, 6], [6, 0]], [[1, 1], [5, 5]], 
+                [[1, 5], [5, 1]], [[3, 3], [3, 4]]
+            ]},
+            // Level 2: 7x7, 6 Colors
+            { N: 7, colors: 6, endpoints: [
+                [[0, 3], [6, 3]], [[3, 0], [3, 6]], [[1, 1], [5, 5]], 
+                [[1, 5], [5, 1]], [[2, 2], [4, 4]], [[2, 4], [4, 2]]
+            ]},
+            // Level 3: 8x8, 7 Colors
+            { N: 8, colors: 7, endpoints: [
+                [[0, 0], [7, 7]], [[0, 7], [7, 0]], [[0, 3], [7, 4]], 
+                [[3, 0], [4, 7]], [[1, 1], [6, 6]], [[1, 6], [6, 1]], 
+                [[3, 3], [4, 4]]
+            ]},
+            // Level 4: 8x8, 8 Colors
+            { N: 8, colors: 8, endpoints: [
+                [[0, 0], [1, 7]], [[7, 0], [6, 7]], [[0, 3], [7, 3]], 
+                [[3, 0], [4, 7]], [[2, 2], [5, 5]], [[2, 5], [5, 2]], 
+                [[4, 4], [4, 5]], [[5, 3], [6, 2]]
+            ]},
+            // Level 5: 9x9, 8 Colors
+            { N: 9, colors: 8, endpoints: [
+                [[0, 0], [8, 8]], [[8, 0], [0, 8]], [[1, 4], [7, 4]], 
+                [[4, 1], [4, 7]], [[2, 2], [6, 6]], [[2, 6], [6, 2]], 
+                [[3, 3], [5, 5]], [[3, 5], [5, 3]]
+            ]},
+            // Level 6: 9x9, 9 Colors
+            { N: 9, colors: 9, endpoints: [
+                [[0, 0], [8, 0]], [[0, 8], [8, 8]], [[1, 1], [7, 7]], 
+                [[1, 7], [7, 1]], [[0, 4], [8, 4]], [[4, 0], [4, 8]], 
+                [[2, 2], [6, 6]], [[2, 6], [6, 2]], [[4, 4], [5, 5]]
+            ]},
+            // Level 7: 10x10, 10 Colors (Extreme Template - 7~9)
+            { N: 10, colors: 10, endpoints: [
+                [[0, 0], [9, 9]], [[0, 9], [9, 0]], [[0, 4], [9, 5]], 
+                [[4, 0], [5, 9]], [[1, 1], [8, 8]], [[1, 8], [8, 1]], 
+                [[2, 4], [7, 5]], [[4, 2], [5, 7]], [[3, 3], [6, 6]], 
+                [[3, 6], [6, 3]]
+            ]},
+            // Level 8: 10x10, 10 Colors (Same as L7)
+            { N: 10, colors: 10, endpoints: [
+                [[0, 0], [9, 9]], [[0, 9], [9, 0]], [[0, 4], [9, 5]], 
+                [[4, 0], [5, 9]], [[1, 1], [8, 8]], [[1, 8], [8, 1]], 
+                [[2, 4], [7, 5]], [[4, 2], [5, 7]], [[3, 3], [6, 6]], 
+                [[3, 6], [6, 3]]
+            ]},
+            // Level 9: 10x10, 10 Colors (Same as L7)
+            { N: 10, colors: 10, endpoints: [
+                [[0, 0], [9, 9]], [[0, 9], [9, 0]], [[0, 4], [9, 5]], 
+                [[4, 0], [5, 9]], [[1, 1], [8, 8]], [[1, 8], [8, 1]], 
+                [[2, 4], [7, 5]], [[4, 2], [5, 7]], [[3, 3], [6, 6]], 
+                [[3, 6], [6, 3]]
+            ]},
+        ];
+
+        // Level 10 ~ 60 (사용자 제공 데이터)
+        const MANUAL_LEVELS_10_20 = [
+            // Level 10
+            {N:7, colors:5, endpoints:[
+                [[0,0],[6,6]], [[0,6],[6,0]], [[1,2],[5,4]], [[2,1],[4,5]], [[3,3],[3,4]]
+            ]},
+            // Level 11
+            {N:7, colors:6, endpoints:[
+                [[0,3],[6,3]], [[3,0],[3,6]], [[1,1],[5,5]], [[1,5],[5,1]], [[2,2],[4,4]], [[2,4],[4,2]]
+            ]},
+            // Level 12
+            {N:7, colors:6, endpoints:[
+                [[0,0],[6,5]], [[0,5],[6,0]], [[1,1],[5,4]], [[1,4],[5,1]], [[2,2],[4,3]], [[2,3],[4,2]]
+            ]},
+            // Level 13
+            {N:8, colors:7, endpoints:[
+                [[0,0],[7,7]], [[0,7],[7,0]], [[1,2],[6,5]], [[2,1],[5,6]], [[3,3],[4,4]], [[1,5],[6,2]], [[2,6],[5,1]]
+            ]},
+            // Level 14
+            {N:8, colors:7, endpoints:[
+                [[0,1],[7,6]], [[0,6],[7,1]], [[1,1],[6,6]], [[1,6],[6,1]], [[2,2],[5,5]], [[2,5],[5,2]], [[3,3],[4,4]]
+            ]},
+            // Level 15
+            {N:8, colors:8, endpoints:[
+                [[0,0],[7,6]], [[0,6],[7,0]], [[1,1],[6,5]], [[1,5],[6,1]], [[2,2],[5,4]], [[2,4],[5,2]], [[3,3],[4,4]], [[3,4],[4,3]]
+            ]},
+            // Level 16
+            {N:8, colors:8, endpoints:[
+                [[0,2],[7,5]], [[0,5],[7,2]], [[1,3],[6,4]], [[1,4],[6,3]], [[2,2],[5,5]], [[2,5],[5,2]], [[3,3],[4,4]], [[3,4],[4,3]]
+            ]},
+            // Level 17
+            {N:9, colors:8, endpoints:[
+                [[0,0],[8,8]], [[0,8],[8,0]], [[1,3],[7,5]], [[3,1],[5,7]], [[2,2],[6,6]], [[2,6],[6,2]], [[3,3],[5,5]], [[3,5],[5,3]]
+            ]},
+            // Level 18
+            {N:9, colors:8, endpoints:[
+                [[0,1],[8,7]], [[0,7],[8,1]], [[1,2],[7,6]], [[2,1],[6,7]], [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]], [[5,4],[5,5]]
+            ]},
+            // Level 19
+            {N:9, colors:9, endpoints:[
+                [[0,0],[8,7]], [[0,7],[8,0]], [[1,1],[7,6]], [[1,6],[7,1]], [[2,2],[6,5]], [[2,5],[6,2]], [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]]
+            ]},
+            // Level 20
+            {N:9, colors:9, endpoints:[
+                [[0,2],[8,6]], [[0,6],[8,2]], [[1,3],[7,5]], [[1,5],[7,3]], [[2,2],[6,4]], [[2,4],[6,2]], [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]]
+            ]}
+        ];
+
+        const MANUAL_LEVELS_20_30 = [
+            // Level 20 (이전 배열과 중복되므로, 결합 시 첫 번째 L20만 사용)
+            {N:9, colors:9, endpoints:[
+                [[0,2],[8,6]], [[0,6],[8,2]], [[1,3],[7,5]], [[1,5],[7,3]],
+                [[2,2],[6,4]], [[2,4],[6,2]], [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]]
+            ]},
+            // Level 21
+            {N:9, colors:9, endpoints:[
+                [[0,0],[8,8]], [[0,8],[8,0]], [[1,2],[7,6]], [[2,1],[6,7]],
+                [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]], [[5,4],[5,5]], [[2,4],[6,4]]
+            ]},
+            // Level 22
+            {N:9, colors:9, endpoints:[
+                [[0,1],[8,7]], [[0,7],[8,1]], [[1,1],[7,7]], [[1,7],[7,1]],
+                [[2,2],[6,6]], [[2,6],[6,2]], [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]]
+            ]},
+            // Level 23
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 24
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]},
+            // Level 25
+            {N:10, colors:10, endpoints:[
+                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
+                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
+            ]},
+            // Level 26
+            {N:10, colors:10, endpoints:[
+                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
+                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
+            ]},
+            // Level 27
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 28
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]},
+            // Level 29
+            {N:10, colors:10, endpoints:[
+                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
+                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
+            ]},
+            // Level 30
+            {N:10, colors:10, endpoints:[
+                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
+                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
+            ]}
+        ];
+
+        const MANUAL_LEVELS_30_40 = [
+            // Level 30 (중복)
+            {N:10, colors:10, endpoints:[
+                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
+                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
+            ]},
+            // Level 31
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 32
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]},
+            // Level 33
+            {N:10, colors:10, endpoints:[
+                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
+                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
+            ]},
+            // Level 34
+            {N:10, colors:10, endpoints:[
+                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
+                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
+            ]},
+            // Level 35
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 36
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]},
+            // Level 37
+            {N:10, colors:10, endpoints:[
+                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
+                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
+            ]},
+            // Level 38
+            {N:10, colors:10, endpoints:[
+                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
+                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
+            ]},
+            // Level 39
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 40
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]}
+        ];
+
+        const MANUAL_LEVELS_40_50 = [
+            // Level 40 (중복)
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 41
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]},
+            // Level 42
+            {N:10, colors:10, endpoints:[
+                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
+                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
+            ]},
+            // Level 43
+            {N:10, colors:10, endpoints:[
+                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
+                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
+            ]},
+            // Level 44
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 45
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]},
+            // Level 46
+            {N:10, colors:10, endpoints:[
+                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
+                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
+            ]},
+            // Level 47
+            {N:10, colors:10, endpoints:[
+                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
+                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
+            ]},
+            // Level 48
+            {N:10, colors:10, endpoints:[
+                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
+                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
+            ]},
+            // Level 49
+            {N:10, colors:10, endpoints:[
+                [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
+                [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
+            ]},
+            // Level 50
+            {N:10, colors:10, endpoints:[
+                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
+                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
+            ]}
+        ];
+
+        const PLUS_LEVELS_50_60 = [
+            // Level 50 (중복. 이 레벨부터 15x15 시작)
+            {N:15, colors:12, endpoints:[
+                [[0,0],[14,14]], [[0,14],[14,0]], [[0,7],[14,8]], [[7,0],[8,14]],
+                [[1,1],[13,13]], [[1,13],[13,1]], [[2,5],[12,10]], [[5,2],[10,12]],
+                [[3,3],[11,11]], [[3,11],[11,3]], [[6,6],[8,8]], [[7,5],[7,9]]
+            ]},
+            // Level 51
+            {N:15, colors:13, endpoints:[
+                [[0,1],[14,13]], [[0,13],[14,1]], [[0,6],[14,9]], [[6,0],[9,14]],
+                [[1,2],[13,12]], [[1,12],[13,2]], [[2,6],[12,9]], [[6,2],[9,12]],
+                [[3,4],[11,10]], [[3,10],[11,4]], [[6,5],[8,9]], [[7,3],[7,11]], [[5,7],[9,7]]
+            ]},
+            // Level 52
+            {N:15, colors:13, endpoints:[
+                [[0,2],[14,12]], [[0,12],[14,2]], [[0,5],[14,10]], [[5,0],[10,14]],
+                [[1,3],[13,11]], [[1,11],[13,3]], [[2,7],[12,8]], [[7,2],[8,12]],
+                [[3,5],[11,9]], [[3,9],[11,5]], [[6,4],[8,10]], [[7,6],[7,8]], [[4,7],[10,7]]
+            ]},
+            // Level 53
+            {N:15, colors:14, endpoints:[
+                [[0,0],[14,14]], [[0,14],[14,0]], [[0,7],[14,7]], [[7,0],[7,14]],
+                [[1,1],[13,13]], [[1,13],[13,1]], [[2,5],[12,10]], [[5,2],[10,12]],
+                [[3,3],[11,11]], [[3,11],[11,3]], [[6,6],[8,8]], [[7,5],[7,9]], [[4,7],[10,7]], [[7,4],[7,10]]
+            ]},
+            // Level 54
+            {N:15, colors:14, endpoints:[
+                [[0,1],[14,13]], [[0,13],[14,1]], [[0,6],[14,8]], [[6,0],[8,14]],
+                [[1,2],[13,12]], [[1,12],[13,2]], [[2,6],[12,8]], [[6,2],[8,12]],
+                [[3,4],[11,10]], [[3,10],[11,4]], [[5,5],[9,9]], [[7,3],[7,11]], [[5,7],[9,7]], [[7,5],[7,9]]
+            ]},
+            // Level 55
+            {N:15, colors:15, endpoints:[
+                [[0,2],[14,12]], [[0,12],[14,2]], [[0,5],[14,10]], [[5,0],[10,14]],
+                [[1,3],[13,11]], [[1,11],[13,3]], [[2,7],[12,8]], [[7,2],[8,12]],
+                [[3,5],[11,9]], [[3,9],[11,5]], [[4,4],[10,10]], [[6,6],[8,8]], [[7,5],[7,9]], [[5,7],[9,7]], [[7,4],[7,10]]
+            ]},
+            // Level 56
+            {N:15, colors:15, endpoints:[
+                [[0,0],[14,14]], [[0,14],[14,0]], [[0,7],[14,7]], [[7,0],[7,14]],
+                [[1,1],[13,13]], [[1,13],[13,1]], [[2,5],[12,10]], [[5,2],[10,12]],
+                [[3,3],[11,11]], [[3,11],[11,3]], [[6,6],[8,8]], [[7,5],[7,9]], [[4,7],[10,7]], [[7,4],[7,10]], [[5,8],[9,6]]
+            ]},
+            // Level 57
+            {N:15, colors:15, endpoints:[
+                [[0,1],[14,13]], [[0,13],[14,1]], [[0,6],[14,8]], [[6,0],[8,14]],
+                [[1,2],[13,12]], [[1,12],[13,2]], [[2,6],[12,8]], [[6,2],[8,12]],
+                [[3,4],[11,10]], [[3,10],[11,4]], [[5,5],[9,9]], [[7,3],[7,11]], [[5,7],[9,7]], [[7,5],[7,9]], [[6,6],[8,8]]
+            ]},
+            // Level 58
+            {N:15, colors:15, endpoints:[
+                [[0,2],[14,12]], [[0,12],[14,2]], [[0,5],[14,10]], [[5,0],[10,14]],
+                [[1,3],[13,11]], [[1,11],[13,3]], [[2,7],[12,8]], [[7,2],[8,12]],
+                [[3,5],[11,9]], [[3,9],[11,5]], [[4,4],[10,10]], [[6,6],[8,8]], [[7,5],[7,9]], [[5,7],[9,7]], [[7,4],[7,10]]
+            ]},
+            // Level 59
+            {N:15, colors:15, endpoints:[
+                [[0,0],[14,14]], [[0,14],[14,0]], [[0,7],[14,7]], [[7,0],[7,14]],
+                [[1,1],[13,13]], [[1,13],[13,1]], [[2,5],[12,10]], [[5,2],[10,12]],
+                [[3,3],[11,11]], [[3,11],[11,3]], [[6,6],[8,8]], [[7,5],[7,9]], [[4,7],[10,7]], [[7,4],[7,10]], [[5,8],[9,6]]
+            ]},
+            // Level 60
+            {N:15, colors:15, endpoints:[
+                [[0,1],[14,13]], [[0,13],[14,1]], [[0,6],[14,8]], [[6,0],[8,14]],
+                [[1,2],[13,12]], [[1,12],[13,2]], [[2,6],[12,8]], [[6,2],[8,12]],
+                [[3,4],[11,10]], [[3,10],[11,4]], [[5,5],[9,9]], [[7,3],[7,11]], [[5,7],[9,7]], [[7,5],[7,9]], [[6,6],[8,8]]
+            ]}
+        ];
+
+        // 모든 레벨 데이터를 결합합니다 (중복 제거)
+        const MANUAL_LEVELS_DATA = [
+            ...MANUAL_LEVELS_DATA_L1_L9,
+            ...MANUAL_LEVELS_10_20,
+            ...MANUAL_LEVELS_20_30.slice(1), // L20 중복 제거
+            ...MANUAL_LEVELS_30_40.slice(1), // L30 중복 제거
+            ...MANUAL_LEVELS_40_50.slice(1), // L40 중복 제거
+            // L50은 10x10에서 15x15로 넘어가는 단계이므로, 이전 배열의 L50 (10x10)은 건너뛰고
+            // PLUS_LEVELS_50_60의 L50 (15x15)을 사용합니다.
+            ...PLUS_LEVELS_50_60
+        ];
+        
+        // --- 사운드 효과 (Tone.js) 설정 ---
+        var synth;
+        var fanfare;
+        
+        async function initializeAudio(retryCount = 0) {
+            try {
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+                
+                synth = new Tone.Synth({
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.005, decay: 0.05, sustain: 0.01, release: 0.05 },
+                }).toDestination();
+
+                fanfare = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.02, decay: 0.2, sustain: 0.1, release: 0.5 },
+                }).toDestination();
+
+            } catch (error) {
+                console.error("Tone.js 초기화 실패:", error);
+                if (retryCount < 5) {
+                    const delay = Math.pow(2, retryCount) * 100;
+                    setTimeout(() => initializeAudio(retryCount + 1), delay);
+                } else {
+                    messageElement.textContent = "🔊 사운드 초기화 실패. 오디오 없이 플레이합니다.";
+                }
+            }
+        }
+        
+        document.addEventListener('click', initializeAudio, { once: true });
+        document.addEventListener('touchstart', initializeAudio, { once: true });
+
+        function playDrawSound(note) {
+            if (synth) {
+                synth.triggerAttackRelease(note, "8n");
+            }
+        }
+        
+        function playFanfare() {
+            if (fanfare) {
+                const notes = ["C5", "E5", "G5", "C6"];
+                fanfare.triggerAttackRelease(notes, "1n");
+            }
+        }
+        
+        // --- 유틸리티 함수 ---
+        function parsePos(posStr) {
+            const [r, c] = posStr.split('-').map(Number);
+            return { r, c };
+        }
+        
+        // --- 게임 설정 및 레벨 관리 (수동 레벨 로딩) ---
+        
+        function getLevelConfig(lvl) {
+            const index = lvl - 1;
+            // 총 레벨 개수는 MANUAL_LEVELS_DATA.length로 확인합니다.
+            if (index < MANUAL_LEVELS_DATA.length) {
+                return MANUAL_LEVELS_DATA[index];
+            }
+            // 마지막 레벨 초과 시 처리
+            return null;
+        }
+
+        function startLevel(lvl) {
+            if (lvl > MANUAL_LEVELS_DATA.length) {
+                showMessage(`🌟 Level ${MANUAL_LEVELS_DATA.length}까지 모두 완료하셨습니다!`, 'var(--success-color)');
+                return;
+            }
+
+            level = lvl;
+            const config = getLevelConfig(lvl);
+            
+            if (!config) {
+                // 이 코드는 위의 if 문에 의해 보호되지만 안전을 위해 유지
+                showMessage(`🌟 Level ${MANUAL_LEVELS_DATA.length}까지 모두 완료하셨습니다!`, 'var(--success-color)');
+                return;
+            }
+            
+            N = config.N;
+            
+            // 사용할 색상 수 설정
+            colors = COLOR_SET.slice(0, config.colors);
+            
+            currentPathColor = null;
+            isDrawing = false;
+            
+            // 수동 레벨 데이터로 보드 초기화
+            initializeBoardFromManualData(config); 
+            
+            renderBoard();
+            levelInfoElement.textContent = `Level ${level} (${N}x${N})`;
+            messageElement.textContent = "";
+        }
+        
+        // 수동 데이터로 보드 초기화 함수
+        function initializeBoardFromManualData(config) {
+            board = Array(N).fill(null).map(() => Array(N).fill(null));
+            paths = {};
+            endpoints = {};
+            
+            const usedColors = COLOR_SET.slice(0, config.colors);
+
+            config.endpoints.forEach((pair, colorIndex) => {
+                const color = usedColors[colorIndex];
+                
+                // [r, c] 배열을 { r, c } 객체로 변환
+                const [r1, c1] = pair[0];
+                const [r2, c2] = pair[1];
+                const pos1 = { r: r1, c: c1 };
+                const pos2 = { r: r2, c: c2 };
+                
+                // 엔드포인트 저장
+                endpoints[color] = [pos1, pos2];
+                
+                // 실제 게임 보드에 시작/끝점만 설정합니다.
+                board[r1][c1] = { type: 'start-end', color, index: 0 };
+                board[r2][c2] = { type: 'start-end', color, index: 1 };
+                
+                // 플레이어 경로 초기화: 시작점만 포함
+                paths[color] = [`${r1}-${c1}`]; 
+            });
+        }
+
+        // --- UI 렌더링 ---
+        function renderBoard() {
+            boardElement.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+            boardElement.innerHTML = '';
+
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    const cellData = board[r][c];
+                    if (cellData) {
+                        cell.dataset.color = cellData.color;
+                        cell.classList.add('start-end');
+                        cell.style.backgroundColor = cellData.color;
+                        cell.style.setProperty('--current-color', cellData.color);
+                    }
+                    
+                    // 터치 및 마우스 이벤트 추가
+                    cell.addEventListener('mousedown', handleStart);
+                    cell.addEventListener('touchstart', handleStart);
+                    cell.addEventListener('mouseenter', handleMove);
+                    
+                    boardElement.appendChild(cell);
+                }
+            }
+            
+            boardElement.addEventListener('mousemove', handleMove);
+            boardElement.addEventListener('touchmove', handleMove, { passive: false }); // touchmove의 기본 동작(스크롤) 방지
+            document.addEventListener('mouseup', handleEnd);
+            document.addEventListener('touchend', handleEnd);
+            document.addEventListener('touchcancel', handleEnd);
+        }
+
+        // --- 게임 상호작용 ---
+
+        function getCellElement(r, c) {
+            return boardElement.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+        }
+
+        function getLastPathPos() {
+            return currentPath[currentPath.length - 1];
+        }
+
+        function clearCellPath(r, c) {
+            board[r][c] = null;
+            const cellElement = getCellElement(r, c);
+            if (cellElement) {
+                cellElement.style.backgroundColor = null;
+                cellElement.removeAttribute('data-color');
+                cellElement.classList.remove('exploding'); 
+            }
+        }
+
+        function addCellToPath(r, c, color) {
+            board[r][c] = { type: 'path', color };
+            const cellElement = getCellElement(r, c);
+            if (cellElement) {
+                cellElement.dataset.color = color;
+                cellElement.style.backgroundColor = color;
+            }
+        }
+        
+        function getCoordsFromEvent(event) {
+            let target;
+            if (event.touches) {
+                const touch = event.touches[0];
+                // touchmove 시 elementFromPoint를 사용해 터치 위치 아래의 요소를 정확히 찾습니다.
+                target = document.elementFromPoint(touch.clientX, touch.clientY);
+            } else {
+                target = event.target;
+            }
+
+            // 부모인 boardElement가 아닌 cell을 정확히 찾습니다.
+            while (target && !target.classList.contains('cell') && target !== boardElement) {
+                target = target.parentNode;
+            }
+
+            if (target && target.classList.contains('cell')) {
+                const r = parseInt(target.dataset.row);
+                const c = parseInt(target.dataset.col);
+                return { r, c, element: target };
+            }
+            return null;
+        }
+
+        function handleStart(event) {
+            event.preventDefault();
+            const coords = getCoordsFromEvent(event);
+            if (!coords) return;
+            
+            const { r, c } = coords;
+            const cellData = board[r][c];
+
+            if (cellData && cellData.type === 'start-end') {
+                isDrawing = true;
+                currentPathColor = cellData.color;
+                
+                // 기존 경로 지우기 (시작점/끝점 제외)
+                const oldPath = paths[currentPathColor];
+                for(let i = 1; i < oldPath.length; i++) {
+                    const { r: pr, c: pc } = parsePos(oldPath[i]);
+                    
+                    const isEndpoint = endpoints[currentPathColor].some(ep => ep.r === pr && ep.c === pc);
+
+                    if (!isEndpoint) {
+                        clearCellPath(pr, pc);
+                    }
+                }
+                
+                currentPath = [`${r}-${c}`]; 
+                paths[currentPathColor] = currentPath;
+                
+                playDrawSound("C4");
+            }
+        }
+
+        function handleMove(event) {
+            if (!isDrawing) return;
+            event.preventDefault();
+            
+            const coords = getCoordsFromEvent(event);
+            if (!coords) return;
+
+            const { r, c } = coords;
+            const newPosStr = `${r}-${c}`;
+            const lastPosStr = getLastPathPos();
+            const { r: lastR, c: lastC } = parsePos(lastPosStr);
+
+            const isAdjacent = (Math.abs(r - lastR) + Math.abs(c - lastC) === 1);
+            if (!isAdjacent) return;
+
+            // 경로 되돌리기 체크
+            const prevPosStr = currentPath[currentPath.length - 2];
+            if (newPosStr === prevPosStr) {
+                const removedPos = currentPath.pop();
+                const { r: rr, c: rc } = parsePos(removedPos);
+                
+                if (board[rr][rc] && board[rr][rc].type !== 'start-end') {
+                    clearCellPath(rr, rc);
+                }
+                
+                playDrawSound("G3");
+                return;
+            }
+
+            // 유효성 체크
+            const cellData = board[r][c];
+            const isClear = !cellData;
+            const isTargetEndpoint = cellData && cellData.color === currentPathColor && cellData.type === 'start-end';
+            const isSameColorPath = cellData && cellData.color === currentPathColor && cellData.type === 'path';
+
+
+            if (isClear || isTargetEndpoint || isSameColorPath) {
+                const isAlreadyInPath = currentPath.includes(newPosStr);
+                if (isAlreadyInPath && !isTargetEndpoint) return;
+                
+                currentPath.push(newPosStr);
+                paths[currentPathColor] = currentPath;
+
+                if (!isTargetEndpoint) {
+                    addCellToPath(r, c, currentPathColor);
+                    playDrawSound("E4");
+                } else {
+                    playDrawSound("G4");
+                }
+
+                if (isTargetEndpoint) {
+                    handleEnd();
+                }
+            } else if (cellData && cellData.color !== currentPathColor) {
+                // 다른 색깔 경로 위로 지나갈 때 드로잉 종료
+                handleEnd();
+                return;
+            }
+        }
+
+        function handleEnd(event) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            const lastPosStr = getLastPathPos();
+            
+            // 현재 색상의 두 엔드포인트 가져오기
+            const [pos1, pos2] = endpoints[currentPathColor];
+            const startStr = `${pos1.r}-${pos1.c}`;
+            const endStr = `${pos2.r}-${pos2.c}`;
+            
+            const pathStart = currentPath[0];
+            const pathEnd = lastPosStr;
+            
+            // 양방향 연결 검사 (시작 -> 끝 또는 끝 -> 시작)
+            const isConnected = (pathStart === startStr && pathEnd === endStr) || (pathStart === endStr && pathEnd === startStr);
+
+            if (!isConnected) {
+                // 연결 실패 시 경로 지우기 (시작점/끝점 제외)
+                for (let i = 1; i < currentPath.length; i++) {
+                    const { r: pr, c: pc } = parsePos(currentPath[i]);
+                    const isStartOrEnd = board[pr][pc] && board[pr][pc].type === 'start-end';
+                    if (!isStartOrEnd) {
+                        clearCellPath(pr, pc);
+                    }
+                }
+                
+                const remainingEndpoint = currentPath[0];
+                paths[currentPathColor] = [remainingEndpoint]; 
+                
+                currentPath = [];
+                currentPathColor = null;
+                return;
+            }
+            
+            checkWinCondition();
+            
+            currentPath = [];
+            currentPathColor = null;
+        }
+
+
+        // --- 승리 조건 및 폭발 효과 ---
+        
+        function checkWinCondition() {
+            let allConnected = true;
+            let boardIsFull = true;
+
+            for (const color of colors) {
+                const path = paths[color];
+                if (!path || path.length < 2) {
+                    allConnected = false;
+                    break;
+                }
+                
+                // 엔드포인트 연결 검사
+                const [pos1, pos2] = endpoints[color];
+                const startStr = `${pos1.r}-${pos1.c}`;
+                const endStr = `${pos2.r}-${pos2.c}`;
+                
+                const pathStart = path[0];
+                const pathEnd = path[path.length - 1];
+
+                const isConnected = (pathStart === startStr && pathEnd === endStr) || (pathStart === endStr && pathEnd === startStr);
+                
+                if (!isConnected) {
+                    allConnected = false;
+                    break;
+                }
+            }
+            
+            if (allConnected) {
+                // 보드가 완전히 채워졌는지 검사 (Flow Free의 핵심 규칙)
+                let filledCount = 0;
+                for (let r = 0; r < N; r++) {
+                    for (let c = 0; c < N; c++) {
+                        if (board[r][c] !== null) {
+                            filledCount++;
+                        }
+                    }
+                }
+                boardIsFull = filledCount === N * N;
+            }
+
+
+            if (allConnected && boardIsFull) {
+                playFanfare();
+                startConfetti(); 
+                
+                showMessage("🎉 완벽해요! 모든 색깔이 연결되었습니다!", 'var(--success-color)');
+                
+                // 보드 폭발 시작
+                setTimeout(explodeBoard, 500); 
+                
+                setTimeout(() => {
+                    if (level < MANUAL_LEVELS_DATA.length) {
+                        messageElement.textContent = "다음 레벨로 이동하세요!";
+                    } else {
+                        messageElement.textContent = "🏆 모든 레벨 완료! 최고입니다!";
+                    }
+                }, 1200);
+            }
+        }
+        
+        // 보드 전체 폭발 효과 구현
+        function explodeBoard() {
+            const allCells = boardElement.querySelectorAll('.cell');
+            
+            // 1. 모든 셀에 폭발 애니메이션 적용 및 소리 재생
+            allCells.forEach(cell => {
+                // 경로가 있는 셀에만 폭발 효과를 적용
+                if (cell.dataset.color) {
+                    // 무작위 딜레이 추가 (비동시성 효과)
+                    const delay = Math.random() * 200; 
+                    setTimeout(() => {
+                        cell.classList.add('exploding');
+                        // 폭발하는 셀에 맞춰 작은 사운드 재생
+                        if (synth) {
+                            synth.triggerAttackRelease(Math.random() > 0.5 ? "A4" : "C5", "16n", Tone.now());
+                        }
+                    }, delay);
+                }
+            });
+
+            // 2. 애니메이션 완료 후 보드 초기화
+            setTimeout(() => {
+                // 보드 데이터 초기화
+                for (let r = 0; r < N; r++) {
+                    for (let c = 0; c < N; c++) {
+                         board[r][c] = null;
+                    }
+                }
+                
+                // UI 초기화
+                allCells.forEach(cell => {
+                    cell.classList.remove('exploding');
+                    cell.style.backgroundColor = null;
+                    cell.removeAttribute('data-color');
+                    cell.classList.remove('start-end'); 
+                });
+                
+            }, 800); 
+        }
+
+        // 캔버스 폭발 효과 구현
+        function startConfetti() {
+            const colorsToUse = [...COLOR_SET, 'var(--text-color)'];
+            const count = 100;
+            
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            
+            const centerX = confettiCanvas.width / 2;
+            const centerY = confettiCanvas.height / 3;
+
+            for (let i = 0; i < count; i++) {
+                confettiParticles.push({
+                    x: centerX,
+                    y: centerY,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: Math.random() * -15 - 5,
+                    color: colorsToUse[Math.floor(Math.random() * colorsToUse.length)],
+                    radius: Math.random() * 3 + 2,
+                    alpha: 1,
+                    gravity: 0.5
+                });
+            }
+
+            if (confettiParticles.length > 0) {
+                animateConfetti();
+            }
+        }
+
+        function animateConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            
+            for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.alpha -= 0.01;
+
+                confettiCtx.fillStyle = p.color;
+                confettiCtx.globalAlpha = p.alpha;
+                confettiCtx.beginPath();
+                confettiCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                confettiCtx.fill();
+                
+                if (p.alpha <= 0 || p.y > confettiCanvas.height) {
+                    confettiParticles.splice(i, 1);
+                }
+            }
+            
+            if (confettiParticles.length > 0) {
+                requestAnimationFrame(animateConfetti);
+            } else {
+                confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        });
+
+
+        // --- 컨트롤러 함수 ---
+        function nextLevel() {
+            startLevel(level + 1);
+        }
+
+        function resetLevel() {
+            startLevel(level);
+            showMessage("🔄 레벨 초기화! 다시 도전하세요!", 'var(--primary-color)');
+        }
+
+        function showMessage(msg, color = 'var(--success-color)') {
+            messageElement.textContent = msg;
+            messageElement.style.color = color;
+            messageElement.style.opacity = 1;
+            
+            setTimeout(() => {
+                messageElement.style.opacity = 0;
+            }, 2000);
+        }
+
+        // --- 초기 시작 ---
+        window.onload = () => {
+            // 초기 캔버스 크기 설정
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+            startLevel(1);
+        };
+
+    </script>
+</body>
+</html>
