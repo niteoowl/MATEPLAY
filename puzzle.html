@@ -94,10 +94,25 @@
             border: 3px solid var(--text-color);
             border-radius: 50%;
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            z-index: 10; /* 시작/끝점을 경로 위에 둠 */
         }
 
         .cell[data-color] {
             box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 폭발 애니메이션 정의 (추가/수정됨) */
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
+            50% { transform: scale(1.5); opacity: 0.8; }
+            100% { transform: scale(3.0); opacity: 0; box-shadow: 0 0 80px currentColor; }
+        }
+
+        .cell.exploding {
+            /* data-color의 배경색을 current-color로 사용하기 위해 style 속성으로 배경색이 지정되어야 함 */
+            animation: explode 0.6s ease-out forwards;
+            position: relative;
+            z-index: 20; /* 폭발 시 가장 위에 표시 */
         }
 
         .cell[data-color]::after {
@@ -108,16 +123,6 @@
             background-color: rgba(255, 255, 255, 0.5);
             border-radius: 50%;
             opacity: 0.3;
-        }
-
-        /* 폭발 애니메이션 정의 */
-        @keyframes explode {
-            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); }
-            100% { transform: scale(2.5); opacity: 0; box-shadow: 0 0 50px rgba(255, 255, 255, 1); }
-        }
-
-        .cell.exploding {
-            animation: explode 0.5s ease-out forwards;
         }
 
         /* 컨트롤 영역 */
@@ -246,9 +251,9 @@
             'hsl(20, 90%, 45%)',   // 15. Brownish Orange
         ];
         
-        // --- 사용자님이 직접 설계해주신 60단계 난이도 데이터 ---
+        // --- 레벨 데이터 (60단계) ---
         
-        // 이전 버전의 L1 ~ L9 (난이도 점진적 상승)
+        // L1 ~ L9 (난이도 점진적 상승)
         const MANUAL_LEVELS_DATA_L1_L9 = [
             // Level 1: 7x7, 5 Colors
             { N: 7, colors: 5, endpoints: [
@@ -284,21 +289,21 @@
                 [[1, 7], [7, 1]], [[0, 4], [8, 4]], [[4, 0], [4, 8]], 
                 [[2, 2], [6, 6]], [[2, 6], [6, 2]], [[4, 4], [5, 5]]
             ]},
-            // Level 7: 10x10, 10 Colors (Extreme Template - 7~9)
+            // Level 7: 10x10, 10 Colors
             { N: 10, colors: 10, endpoints: [
                 [[0, 0], [9, 9]], [[0, 9], [9, 0]], [[0, 4], [9, 5]], 
                 [[4, 0], [5, 9]], [[1, 1], [8, 8]], [[1, 8], [8, 1]], 
                 [[2, 4], [7, 5]], [[4, 2], [5, 7]], [[3, 3], [6, 6]], 
                 [[3, 6], [6, 3]]
             ]},
-            // Level 8: 10x10, 10 Colors (Same as L7)
+            // Level 8: 10x10, 10 Colors
             { N: 10, colors: 10, endpoints: [
                 [[0, 0], [9, 9]], [[0, 9], [9, 0]], [[0, 4], [9, 5]], 
                 [[4, 0], [5, 9]], [[1, 1], [8, 8]], [[1, 8], [8, 1]], 
                 [[2, 4], [7, 5]], [[4, 2], [5, 7]], [[3, 3], [6, 6]], 
                 [[3, 6], [6, 3]]
             ]},
-            // Level 9: 10x10, 10 Colors (Same as L7)
+            // Level 9: 10x10, 10 Colors
             { N: 10, colors: 10, endpoints: [
                 [[0, 0], [9, 9]], [[0, 9], [9, 0]], [[0, 4], [9, 5]], 
                 [[4, 0], [5, 9]], [[1, 1], [8, 8]], [[1, 8], [8, 1]], 
@@ -307,8 +312,8 @@
             ]},
         ];
 
-        // Level 10 ~ 60 (사용자 제공 데이터)
-        const MANUAL_LEVELS_10_20 = [
+        // L10 ~ L60 데이터 (이전 요청에서 제공된 데이터 포함)
+        const MANUAL_LEVELS_DATA_L10_L60 = [
             // Level 10
             {N:7, colors:5, endpoints:[
                 [[0,0],[6,6]], [[0,6],[6,0]], [[1,2],[5,4]], [[2,1],[4,5]], [[3,3],[3,4]]
@@ -352,14 +357,6 @@
             // Level 20
             {N:9, colors:9, endpoints:[
                 [[0,2],[8,6]], [[0,6],[8,2]], [[1,3],[7,5]], [[1,5],[7,3]], [[2,2],[6,4]], [[2,4],[6,2]], [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]]
-            ]}
-        ];
-
-        const MANUAL_LEVELS_20_30 = [
-            // Level 20 (이전 배열과 중복되므로, 결합 시 첫 번째 L20만 사용)
-            {N:9, colors:9, endpoints:[
-                [[0,2],[8,6]], [[0,6],[8,2]], [[1,3],[7,5]], [[1,5],[7,3]],
-                [[2,2],[6,4]], [[2,4],[6,2]], [[3,3],[5,5]], [[3,5],[5,3]], [[4,4],[4,5]]
             ]},
             // Level 21
             {N:9, colors:9, endpoints:[
@@ -407,14 +404,6 @@
                 [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
             ]},
             // Level 30
-            {N:10, colors:10, endpoints:[
-                [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
-                [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
-            ]}
-        ];
-
-        const MANUAL_LEVELS_30_40 = [
-            // Level 30 (중복)
             {N:10, colors:10, endpoints:[
                 [[0,3],[9,6]], [[0,6],[9,3]], [[0,7],[9,2]], [[4,3],[5,6]],
                 [[1,4],[8,5]], [[1,5],[8,4]], [[2,7],[7,2]], [[4,5],[5,4]], [[3,6],[6,3]], [[3,9],[6,0]]
@@ -468,14 +457,6 @@
             {N:10, colors:10, endpoints:[
                 [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
                 [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
-            ]}
-        ];
-
-        const MANUAL_LEVELS_40_50 = [
-            // Level 40 (중복)
-            {N:10, colors:10, endpoints:[
-                [[0,0],[9,9]], [[0,9],[9,0]], [[0,4],[9,5]], [[4,0],[5,9]],
-                [[1,1],[8,8]], [[1,8],[8,1]], [[2,4],[7,5]], [[4,2],[5,7]], [[3,3],[6,6]], [[3,6],[6,3]]
             ]},
             // Level 41
             {N:10, colors:10, endpoints:[
@@ -522,15 +503,7 @@
                 [[0,1],[9,8]], [[0,8],[9,1]], [[0,5],[9,4]], [[4,1],[5,8]],
                 [[1,2],[8,7]], [[1,7],[8,2]], [[2,5],[7,4]], [[4,3],[5,6]], [[3,4],[6,5]], [[3,7],[6,2]]
             ]},
-            // Level 50
-            {N:10, colors:10, endpoints:[
-                [[0,2],[9,7]], [[0,7],[9,2]], [[0,6],[9,3]], [[4,2],[5,7]],
-                [[1,3],[8,6]], [[1,6],[8,3]], [[2,6],[7,3]], [[4,4],[5,5]], [[3,5],[6,4]], [[3,8],[6,1]]
-            ]}
-        ];
-
-        const PLUS_LEVELS_50_60 = [
-            // Level 50 (중복. 이 레벨부터 15x15 시작)
+            // Level 50 (15x15 시작)
             {N:15, colors:12, endpoints:[
                 [[0,0],[14,14]], [[0,14],[14,0]], [[0,7],[14,8]], [[7,0],[8,14]],
                 [[1,1],[13,13]], [[1,13],[13,1]], [[2,5],[12,10]], [[5,2],[10,12]],
@@ -598,16 +571,10 @@
             ]}
         ];
 
-        // 모든 레벨 데이터를 결합합니다 (중복 제거)
+        // 모든 레벨 데이터를 결합합니다 (L1~L9 + L10~L60)
         const MANUAL_LEVELS_DATA = [
             ...MANUAL_LEVELS_DATA_L1_L9,
-            ...MANUAL_LEVELS_10_20,
-            ...MANUAL_LEVELS_20_30.slice(1), // L20 중복 제거
-            ...MANUAL_LEVELS_30_40.slice(1), // L30 중복 제거
-            ...MANUAL_LEVELS_40_50.slice(1), // L40 중복 제거
-            // L50은 10x10에서 15x15로 넘어가는 단계이므로, 이전 배열의 L50 (10x10)은 건너뛰고
-            // PLUS_LEVELS_50_60의 L50 (15x15)을 사용합니다.
-            ...PLUS_LEVELS_50_60
+            ...MANUAL_LEVELS_DATA_L10_L60.slice(1) // L10부터 시작하므로 L10 이전은 건너뜀
         ];
         
         // --- 사운드 효과 (Tone.js) 설정 ---
@@ -616,6 +583,7 @@
         
         async function initializeAudio(retryCount = 0) {
             try {
+                // 사용자의 첫 상호작용 후 Tone.js 시작
                 if (Tone.context.state !== 'running') {
                     await Tone.start();
                 }
@@ -641,6 +609,7 @@
             }
         }
         
+        // 클릭 또는 터치 시 오디오 컨텍스트를 활성화
         document.addEventListener('click', initializeAudio, { once: true });
         document.addEventListener('touchstart', initializeAudio, { once: true });
 
@@ -685,7 +654,6 @@
             const config = getLevelConfig(lvl);
             
             if (!config) {
-                // 이 코드는 위의 if 문에 의해 보호되지만 안전을 위해 유지
                 showMessage(`🌟 Level ${MANUAL_LEVELS_DATA.length}까지 모두 완료하셨습니다!`, 'var(--success-color)');
                 return;
             }
@@ -758,14 +726,16 @@
                     // 터치 및 마우스 이벤트 추가
                     cell.addEventListener('mousedown', handleStart);
                     cell.addEventListener('touchstart', handleStart);
-                    cell.addEventListener('mouseenter', handleMove);
+                    cell.addEventListener('mousemove', handleMove); // 개별 셀에도 move 이벤트를 추가하여 드래그 감도 향상
+                    cell.addEventListener('touchmove', handleMove, { passive: false });
                     
                     boardElement.appendChild(cell);
                 }
             }
             
+            // 보드 전체에도 move 이벤트를 추가하여 셀 밖에서도 드래그 감지
             boardElement.addEventListener('mousemove', handleMove);
-            boardElement.addEventListener('touchmove', handleMove, { passive: false }); // touchmove의 기본 동작(스크롤) 방지
+            boardElement.addEventListener('touchmove', handleMove, { passive: false }); 
             document.addEventListener('mouseup', handleEnd);
             document.addEventListener('touchend', handleEnd);
             document.addEventListener('touchcancel', handleEnd);
@@ -866,7 +836,13 @@
             const lastPosStr = getLastPathPos();
             const { r: lastR, c: lastC } = parsePos(lastPosStr);
 
-            const isAdjacent = (Math.abs(r - lastR) + Math.abs(c - lastC) === 1);
+            // 가로, 세로, 대각선 인접성 체크 (Draggable Flow-Link 스타일)
+            const dr = Math.abs(r - lastR);
+            const dc = Math.abs(c - lastC);
+            
+            // dr <= 1 && dc <= 1은 가로(1,0), 세로(0,1), 대각선(1,1) 모두 허용합니다. (사용자가 요청한 쉬운 연결)
+            const isAdjacent = dr <= 1 && dc <= 1 && (dr > 0 || dc > 0); 
+            
             if (!isAdjacent) return;
 
             // 경로 되돌리기 체크
@@ -875,6 +851,7 @@
                 const removedPos = currentPath.pop();
                 const { r: rr, c: rc } = parsePos(removedPos);
                 
+                // 시작점/끝점이 아니면 셀을 지웁니다.
                 if (board[rr][rc] && board[rr][rc].type !== 'start-end') {
                     clearCellPath(rr, rc);
                 }
@@ -892,6 +869,7 @@
 
             if (isClear || isTargetEndpoint || isSameColorPath) {
                 const isAlreadyInPath = currentPath.includes(newPosStr);
+                // 이미 경로에 포함된 셀을 다시 지나가려고 할 때, 그 셀이 타겟 엔드포인트가 아니라면 무시
                 if (isAlreadyInPath && !isTargetEndpoint) return;
                 
                 currentPath.push(newPosStr);
@@ -956,7 +934,7 @@
         }
 
 
-        // --- 승리 조건 및 폭발 효과 ---
+        // --- 승리 조건 및 폭발 효과 (수정/추가된 부분) ---
         
         function checkWinCondition() {
             let allConnected = true;
@@ -1000,14 +978,16 @@
 
 
             if (allConnected && boardIsFull) {
+                // 1. 축하 효과 시작
                 playFanfare();
                 startConfetti(); 
                 
                 showMessage("🎉 완벽해요! 모든 색깔이 연결되었습니다!", 'var(--success-color)');
                 
-                // 보드 폭발 시작
+                // 2. 보드 폭발 시작 (0.5초 딜레이 후)
                 setTimeout(explodeBoard, 500); 
                 
+                // 3. 폭발 종료 후 다음 레벨 안내 (1.2초 딜레이 후)
                 setTimeout(() => {
                     if (level < MANUAL_LEVELS_DATA.length) {
                         messageElement.textContent = "다음 레벨로 이동하세요!";
@@ -1018,7 +998,7 @@
             }
         }
         
-        // 보드 전체 폭발 효과 구현
+        // 보드 전체 폭발 효과 구현 (추가/수정된 부분)
         function explodeBoard() {
             const allCells = boardElement.querySelectorAll('.cell');
             
@@ -1038,7 +1018,7 @@
                 }
             });
 
-            // 2. 애니메이션 완료 후 보드 초기화
+            // 2. 애니메이션 완료 후 보드 상태 초기화
             setTimeout(() => {
                 // 보드 데이터 초기화
                 for (let r = 0; r < N; r++) {
@@ -1047,15 +1027,23 @@
                     }
                 }
                 
-                // UI 초기화
+                // UI 초기화 (폭발 클래스 제거 및 색상 초기화)
                 allCells.forEach(cell => {
                     cell.classList.remove('exploding');
                     cell.style.backgroundColor = null;
                     cell.removeAttribute('data-color');
                     cell.classList.remove('start-end'); 
                 });
+
+                // 다음 레벨 시작을 위해 엔드포인트 다시 렌더링
+                const nextConfig = getLevelConfig(level);
+                if (nextConfig) {
+                    // 현재 레벨을 다시 렌더링해서 다음 레벨을 준비하는 것이 아니라,
+                    // 다음 레벨 버튼을 눌러야 다음 레벨로 이동하는 것이므로 UI를 깨끗하게 비워만 둡니다.
+                    // (다음 레벨 버튼 클릭 시 startLevel(level + 1)이 호출될 것임)
+                }
                 
-            }, 800); 
+            }, 800); // CSS 애니메이션 시간(0.6s)보다 약간 긴 시간 후 실행
         }
 
         // 캔버스 폭발 효과 구현
