@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025학년도 중학교 2학년 영어 듣기 평가 자동 채점 시스템</title>
+    <!-- 보안상의 이유: 우클릭 방지 -->
+    <body oncontextmenu="return false;">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 1. Base Styles: White and Blue Only, No Rounded Corners, No Text Selection */
+        body { 
+            /* 굴림체 및 명조체 사용을 위한 기본 설정 */
+            font-family: 'Malgun Gothic', 'Dotum', 'Gulim', sans-serif; 
+            background-color: #ffffff;
+            color: #2a3d72;
+            user-select: none; /* Disable text selection (보안) */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        :root {
+            --color-primary: #2a3d72;
+            --color-secondary: #0056b3; 
+        }
+
+        /* 2. Header Style (명조체 느낌 부여) */
+        .official-header { 
+            background-color: #ffffff; 
+            color: var(--color-primary); 
+            border-bottom: 3px solid var(--color-primary); 
+            padding: 20px 0;
+            box-shadow: none;
+        }
+        .official-header h1, 
+        .official-header p { /* 모든 헤더 텍스트에 명조체 적용 */
+            font-family: 'Batang', 'Gungsuh', 'Noto Serif KR', serif; /* 명조체 느낌 */
+            font-weight: 900;
+        }
+        
+        /* Container style: Blocky, defined boundary */
+        .container-wrapper { 
+            max-width: 960px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background-color: #ffffff; 
+            border: 2px solid var(--color-primary);
+            border-radius: 0; 
+            box-shadow: none; 
+        } 
+
+        /* 3. Question Card and Section Styling */
+        .question-card { 
+            border: 1px solid var(--color-secondary); 
+            background-color: #ffffff; 
+            border-radius: 0; 
+            margin-bottom: 20px; 
+            padding: 20px; 
+            pointer-events: none; /* Initial state: Disallow clicking (보안상의 이유) */
+            opacity: 0.6; 
+        }
+        .question-card.active-interaction {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        .section-title { 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            color: var(--color-primary); 
+            margin-bottom: 15px; 
+            border-bottom: 2px solid var(--color-secondary); 
+            padding-bottom: 8px;
+        }
+
+        /* 4. Button styling - Static, Blue/White */
+        .btn-base { 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 0; 
+            font-weight: normal; 
+            transition: none; 
+            border: 1px solid var(--color-primary); 
+        }
+        .btn-primary { 
+            background-color: var(--color-primary); 
+            color: white;
+            font-weight: bold;
+        }
+        .btn-primary:hover { background-color: var(--color-secondary); }
+        .btn-primary:disabled { background-color: #cccccc; color: #555; cursor: not-allowed; border-color: #cccccc; }
+
+        .btn-audio-start { 
+            background-color: var(--color-secondary); 
+            color: white;
+            font-weight: bold;
+        }
+        .btn-audio-start:hover { background-color: var(--color-primary); }
+        .btn-audio-start:disabled { background-color: #cccccc; cursor: not-allowed; }
+
+        /* 5. Radio/Option Styling */
+        input[type="radio"]:checked + label { 
+            background-color: var(--color-primary); 
+            color: white; 
+            border-color: var(--color-primary); 
+        }
+        .option-label { 
+            cursor: pointer; 
+            transition: none; 
+            border: 1px solid #ced4da;
+            border-radius: 0; 
+            padding: 10px; 
+            margin-bottom: 5px; 
+            background-color: #ffffff; 
+            color: var(--color-primary);
+        }
+        .option-label:hover { background-color: #f0f8ff; } 
+
+        .image-question-img { max-width: 100%; height: auto; border: 1px solid #e0e0e0; margin-top: 10px; margin-bottom: 15px; }
+        
+        /* 6. 성적표 스타일 (굴림체 느낌) */
+        #results-area {
+            font-family: 'Gulim', 'Malgun Gothic', sans-serif; /* 굴림체 느낌 */
+            padding: 0;
+            border: none;
+        }
+        .report-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--color-primary);
+            margin-bottom: 10px;
+            padding: 15px 0;
+            border-bottom: 5px double var(--color-primary);
+            text-align: center;
+        }
+        .summary-box {
+            border: 2px solid var(--color-primary);
+            margin-bottom: 20px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-around;
+            background-color: #f0f8ff;
+        }
+        .summary-item {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--color-primary);
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid var(--color-primary);
+        }
+        .report-table th, .report-table td {
+            border: 1px solid var(--color-primary);
+            padding: 8px 12px;
+            text-align: center;
+        }
+        .report-table th {
+            background-color: var(--color-primary);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .correct-bg { background-color: #f0f8ff; }
+        .wrong-bg { background-color: #ffffff; color: #cc0000; }
+        .unanswered-bg { background-color: #f0f0f0; color: #555555; }
+
+        /* Custom Modal Style for Security Warning */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            border: 5px solid var(--color-primary);
+            border-radius: 0;
+            padding: 30px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            color: var(--color-primary);
+        }
+
+        /* Loading Overlay for Submission (New) */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95); /* Semi-transparent white */
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1500;
+            color: var(--color-primary);
+            font-family: 'Batang', 'Gungsuh', 'Noto Serif KR', serif; /* 명조체 */
+            text-align: center;
+        }
+        .loading-spinner {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid var(--color-primary); /* Blue */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1.5s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay for Submission (New) -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p class="text-2xl font-bold mb-4">채점 결과 처리 중...</p>
+        <p class="text-lg text-gray-700">
+            저작권: 15개 시 도교육청 및 한국교육과정평가원.
+        </p>
+        <p class="text-lg text-gray-700">
+            Copyright © 2025 Ministry of Education, KICE.
+        </p>
+    </div>
+
+    <!-- Security Warning Modal -->
+    <div id="security-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title" class="text-xl font-bold mb-4" style="color: #cc0000;">[경고] 보안 규정 위반 감지</h3>
+            <p id="modal-text-1" class="mb-4 text-lg">
+                본 시스템은 평가의 공정성 및 저작권 보호를 위해 우클릭 및 텍스트 복제를 금지하고 있습니다.
+            </p>
+            <p id="modal-text-2" class="mb-6 text-sm text-gray-700">
+                규정을 준수하여 주십시오.
+            </p>
+            <button id="modal-button" onclick="document.getElementById('security-modal').style.display='none';" 
+                class="btn-base btn-primary bg-red-600 hover:bg-red-700 font-bold">
+                확인 및 응시 계속
+            </button>
+        </div>
+    </div>
+
+    <header class="official-header text-center">
+        <div class="max-w-screen-xl mx-auto px-4">
+            <p class="text-lg font-medium mb-1">대한민국 교육부 · 한국교육과정평가원</p>
+            <h1 class="text-4xl mb-2">
+                2025학년도 중학교 2학년 영어 듣기 능력 평가
+            </h1>
+            <p class="text-xl font-semibold">온라인 자율 학습 및 채점 시스템</p>
+        </div>
+    </header>
+
+    <div class="container-wrapper mt-8">
+        <section class="mb-8 p-6 bg-white border border-secondary">
+            <h2 class="section-title">
+                듣기 평가 음원 재생 및 응시
+            </h2>
+            <audio id="listening-audio" src="https://wdown.ebsi.co.kr/engexam/2025/2025_eng_01_go3/2025_eng_01_go3_mp3_5T2ACN74.mp3" preload="auto" hidden></audio>
+            <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <button id="audio-start-button" onclick="startListening(event)"
+                    class="btn-base btn-audio-start">
+                    ▶ 음원 재생 시작
+                </button>
+                <p id="audio-status" class="font-medium text-base text-gray-700">
+                    ※ 재생 버튼을 누른 후에는 일시 정지/되감기가 규정 상 제한됩니다.
+                </p>
+            </div>
+        </section>
+
+        <section class="mb-8">
+            <h2 class="section-title">
+                문제 풀이
+            </h2>
+            <form id="quiz-form" class="space-y-6">
+                <!-- Questions will be injected here by JavaScript -->
+            </form>
+            <!-- 모든 상태 메시지 제거 -->
+            <p id="quiz-interaction-status" class="text-center font-bold text-red-600 mt-4 hidden">
+            </p> 
+        </section>
+
+        <div class="mt-8 mb-10 text-center">
+            <!-- 제출 버튼은 초기부터 활성화됨 -->
+            <button id="submit-button" onclick="submitQuiz(event)"
+                class="btn-base btn-primary text-lg">
+                제출 및 채점 결과 확인
+            </button>
+        </div>
+
+        <section id="results-area" class="mt-8 hidden">
+            <!-- Results Table will be generated here -->
+        </section>
+
+        <footer class="mt-10 text-center text-gray-500 text-sm py-4 border-t border-secondary">
+            <p>본 시스템은 학습자의 자기 주도 학습을 지원하기 위해 개발되었습니다.</p>
+            <p>저작권: 15개 시 도교육청 및 한국교육과정평가원. 보안상의 이유로 무단 복제 및 배포를 금지합니다.</p>
+            <p>Copyright © 2025 Ministry of Education, KICE. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        const questionsData = [
+            { qNum: 1, text: "대화를 듣고, 남자의 마지막 말에 대한 여자의 응답으로 가장 적절한 것을 고르시오.", options: ["① I don’t want to go out this evening.", "② Great. I’ll meet you at the park at 3 p.m.", "③ Okay. I’ll check my schedule and call you.", "④ Sorry. I have an appointment on Saturday.", "⑤ Maybe you should check the details online."], answer: 2 },
+            { qNum: 2, text: "대화를 듣고, 여자의 마지막 말에 대한 남자의 응답으로 가장 적절한 것을 고르시오.", options: ["① Well, you should have exercised regularly.", "② Sure. I have the same model of bag as yours.", "③ Then, you’d better go and see if they’re still there.", "④ Exactly. Those headphones’ sound quality is so amazing.", "⑤ Of course. The gym is usually very lively and energetic."], answer: 3 },
+            { qNum: 3, text: "대화를 듣고, 남자의 마지막 말에 대한 여자의 응답으로 가장 적절한 것을 고르시오.", options: ["① I’m sorry that I couldn’t get you a refund.", "② I’m so happy we finally fixed the air conditioner.", "③ Good. I’ll let you know after making the phone call.", "④ No one will be home tomorrow, so we can’t have him come.", "⑤ Do not try to fix it yourself. We’d better call a repair person."], answer: 3 },
+            { qNum: 4, text: "다음을 듣고, 여자가 하는 말의 주제로 가장 적절한 것을 고르시오.", options: ["① 실내 공기를 정화하는 다양한 방법", "② 다양한 알레르기 증상 완화 요법", "③ 실내 공기 오염의 주요 원인", "④ 공기청정기 사용의 장단점", "⑤ 실내 식물 관리 방법"], answer: 1 },
+            { qNum: 5, text: "다음을 듣고, 남자가 하는 말의 목적으로 가장 적절한 것을 고르시오.", options: ["① 학교 상담 프로그램을 홍보하려고", "② 화를 다스리는 여러 방법을 설명하려고", "③ 친구와의 갈등 해결 방법에 대해 조언하려고", "④ 토론에서 상대방을 설득하는 기술을 소개하려고", "⑤ 정서 발달에 있어 자기반성의 중요성을 알려주려고"], answer: 3 },
+            { qNum: 6, text: "대화를 듣고, 여자의 주장으로 가장 적절한 것을 고르시오.", options: ["① 공부할 때 음악을 듣지 말아야 한다.", "② 스스로 공부하는 습관을 들여야 한다.", "③ 짧은 휴식을 취하면서 공부해야 한다.", "④ 효율적 학습을 위해 과식을 피해야 한다.", "⑤ 공부하는 동안 주기적으로 스트레칭을 해야 한다."], answer: 1 },
+            { qNum: 7, text: "대화를 듣고, 남자의 의견으로 가장 적절한 것을 고르시오.", options: ["① 물건 구매 전 시간적 여유를 두면 더 현명한 소비를 할 수 있다.", "② 쇼핑 목록을 미리 작성하면 충동구매를 막을 수 있다.", "③ 고가의 물건을 사기 전 가격 비교가 필요하다.", "④ 물품 구입을 줄이는 것이 환경에 도움이 된다.", "⑤ 온라인 쇼핑보다 오프라인 쇼핑이 더 합리적 구매를 가능하게 한다."], answer: 1 },
+            { qNum: 8, text: "대화를 듣고, 두 사람의 관계를 가장 잘 나타낸 것을 고르시오.", options: ["① 헬스 트레이너 ― 피트니스 모델", "② 재활 치료사 ― 마라톤 선수", "③ 신문 기자 ― 육상 선수", "④ 수영 강사 ― 수강생", "⑤ 요리사 ― 방송 작가"], answer: 2 },
+            { qNum: 9, text: "다음 그림의 상황에 가장 적절한 대화를 고르시오.<br><img src='https://i.postimg.cc/BnpQHcy9/image.png' alt='9번 문제 참고 그림' class='image-question-img'>", options: ["①", "②", "③", "④", "⑤"], answer: 3 },
+            { qNum: 10, text: "대화를 듣고, 여자가 할 일로 가장 적절한 것을 고르시오.", options: ["① 다과 준비하기", "② 일정 공지하기", "③ 예산 조정하기", "④ 버스 대여하기", "⑤ 호텔 회의장 예약하기"], answer: 2 },
+            { qNum: 11, text: "대화를 듣고, 남자가 발표 준비 모임에 참석할 수 없는 이유를 고르시오.", options: ["① 건강에 이상이 있어서", "② 급히 해야 할 과제가 있어서", "③ 사촌 결혼식에 참석해야 해서", "④ 할머니 병문안을 가야 해서", "⑤ 모임 일정이 변경된 것을 미리 알지 못해서"], answer: 4 },
+            { qNum: 12, text: "대화를 듣고, 여자가 지불할 금액을 고르시오.", options: ["① $ 21", "② $ 22", "③ $ 23", "④ $ 25", "⑤ $ 27"], answer: 4 },
+            { qNum: 13, text: "대화를 듣고, Skyview Exploring Experience에 관해 언급되지 않은 것을 고르시오.", options: ["① 소요 시간", "② 장비 제공 여부", "③ 입장료", "④ 단체 할인 여부", "⑤ 휴무일"], answer: 5 },
+            { qNum: 14, text: "2025 Design for All Competition에 관한 다음 내용을 듣고, 일치하지 않는 것을 고르시오.", options: ["① 주제는 다양성에 대한 존중이다.", "② 모든 연령대가 참여할 수 있다.", "③ 디자인을 온라인으로 제출하여야 한다.", "④ 마감 기한은 9월 14일까지이다.", "⑤ 우승 상금은 400달러이다."], answer: 5 },
+            { qNum: 15, text: "다음 표를 보면서 대화를 듣고, 두 사람이 구매할 캠핑 의자를 고르시오.<br>Camping Chairs<br><table class='min-w-full divide-y divide-gray-200 border border-gray-300 my-4'><thead><tr><th class='px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>Model</th><th class='px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>Price</th><th class='px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>Backrest</th><th class='px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>Frame</th><th class='px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>Weight (kg)</th></tr></thead><tbody class='bg-white divide-y divide-gray-200'><tr><td class='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>A</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>$ 40</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>○</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>Steel</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>4.2</td></tr><tr><td class='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>B</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>$ 45</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>○</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>Wooden</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>3.4</td></tr><tr><td class='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>C</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>$ 48</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>×</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>Steel</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>3.7</td></tr><tr><td class='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>D</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>$ 48</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>○</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>Steel</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>3.9</td></tr><tr><td class='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>E</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>$ 55</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>×</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>Wooden</td><td class='px-6 py-4 whitespace-nowrap text-sm text-gray-700'>4.0</td></tr></tbody></table>", options: ["① A", "② B", "③ C", "④ D", "⑤ E"], answer: 4 },
+            { qNum: 16, text: "대화를 듣고, 남자의 마지막 말에 대한 여자의 응답으로 가장 적절한 것을 고르시오.", options: ["① Oh, if you find them, let me know. I’ll get some there myself.", "② Okay. I’ll ask my dad how to make those potato chips.", "③ I already tried them. But they were too salty for me.", "④ Good to hear that they have the chips in stock.", "⑤ Sorry. I thought you also enjoy spicy food."], answer: 1 },
+            { qNum: 17, text: "대화를 듣고, 여자의 마지막 말에 대한 남자의 응답으로 가장 적절한 것을 고르시오.", options: ["① Please tell me when your business succeeds.", "② Congratulations! You finally published your book.", "③ I reviewed your proposal and it needs to be changed.", "④ I’m sorry that I had to reschedule the meeting.", "⑤ No problem. I’ll visit you whenever you’re free."], answer: 5 },
+            { qNum: 18, text: "다음 상황 설명을 듣고, Eric이 Monica에게 할 말로 가장 적절한 것을 고르시오.", options: ["① Carefully weigh both options before deciding.", "② How about balancing your dream with your parents’?", "③ Maybe it’s better to choose a career your parents prefer.", "④ Pursue your dream no matter what your parents want.", "⑤ Why don’t you seek your music teacher’s advice?"], answer: 4 },
+            { qNum: 19, text: "다음을 듣고, 물음에 답하시오. (19. 남자가 하는 말의 주제로 가장 적절한 것을 고르시오.)", options: ["① development of cooking through inventions", "② practical inventions for everyday use", "③ history of innovative medical tools", "④ most-loved inventors in history", "⑤ inventions motivated by love"], answer: 5 },
+            { qNum: 20, text: "다음을 듣고, 물음에 답하시오. (20. 언급된 발명품이 아닌 것을 고르시오.)", options: ["① band-aids", "② magnetic buttons", "③ baking soda", "④ safety glass", "⑤ medical gloves"], answer: 4 }
+        ];
+
+        // --- Audio Control Logic ---
+        const audio = document.getElementById('listening-audio');
+        let lastValidTime = 0;
+        let isAudioPlaying = false;
+        let interactionEnabled = false;
+        let originalVolume = 1;
+        const INTERACTION_DELAY_SEC = 40; // 40초 후 활성화 규정
+
+        // 1. Right-click Handler (Popup)
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            const modal = document.getElementById('security-modal');
+            document.getElementById('modal-title').textContent = '[경고] 보안 규정 위반 감지';
+            document.getElementById('modal-text-1').textContent = '본 시스템은 평가의 공정성 및 저작권 보호를 위해 우클릭 및 텍스트 복제를 금지하고 있습니다.';
+            document.getElementById('modal-text-2').textContent = '규정을 준수하여 주십시오.';
+            document.getElementById('modal-button').textContent = '확인 및 응시 계속';
+            modal.style.display = 'flex';
+        });
+
+        function startListening(event) {
+            event.preventDefault();
+            const startButton = document.getElementById('audio-start-button');
+            const statusText = document.getElementById('audio-status');
+
+            if (audio.readyState < 2) {
+                statusText.textContent = '🔊 음원 로딩 중...';
+                statusText.style.color = 'var(--color-primary)';
+                audio.load();
+                audio.addEventListener('canplaythrough', () => {
+                    setupAudioSecurity();
+                    startButton.disabled = true;
+                    statusText.textContent = '▶ 음원 재생 중'; // 간결한 메시지
+                    statusText.style.color = 'var(--color-secondary)';
+                }, { once: true });
+                return;
+            }
+
+            setupAudioSecurity();
+            startButton.disabled = true;
+            statusText.textContent = '▶ 음원 재생 중'; // 간결한 메시지
+            statusText.style.color = 'var(--color-secondary)';
+        }
+
+        function enableQuestionInteraction() {
+            if (interactionEnabled) return;
+            interactionEnabled = true;
+
+            const cards = document.querySelectorAll('.question-card');
+            cards.forEach(card => {
+                card.classList.add('active-interaction');
+                card.classList.remove('opacity-60');
+            });
+            
+            document.querySelectorAll('#quiz-form input[type="radio"]').forEach(input => {
+                input.disabled = false;
+            });
+            console.log("Interaction enabled after 40 seconds.");
+        }
+
+        function setupAudioSecurity() {
+            isAudioPlaying = true;
+            originalVolume = audio.volume > 0 ? audio.volume : 1;
+            audio.play();
+            
+            // Prevent pausing
+            audio.addEventListener('pause', () => {
+                if (isAudioPlaying && audio.currentTime < audio.duration - 1) { 
+                    audio.play(); 
+                }
+            });
+
+            // Prevent seeking backward and handle Mute/Delay
+            audio.addEventListener('timeupdate', () => {
+                const currentTime = audio.currentTime;
+                
+                // Security: Prevent seeking backward
+                if (currentTime < lastValidTime - 1 && currentTime > 1) { 
+                    audio.currentTime = lastValidTime; 
+                } else {
+                    lastValidTime = currentTime; 
+                }
+
+                // Security: Mute between 30 and 31 seconds (요청에 따라 변경)
+                if (currentTime >= 30 && currentTime <= 31) {
+                    if (audio.volume !== 0) {
+                        originalVolume = audio.volume; 
+                        audio.volume = 0;
+                    }
+                } else if (audio.volume === 0 && currentTime > 31) {
+                    audio.volume = originalVolume; 
+                }
+
+                // Security: Enable interaction after 40 seconds
+                if (currentTime >= INTERACTION_DELAY_SEC && !interactionEnabled) {
+                    enableQuestionInteraction();
+                }
+            });
+
+            // End event: Just restore volume, do not affect submit button (사용자 요청: 언제든 제출 가능)
+            audio.addEventListener('ended', () => {
+                isAudioPlaying = false;
+                document.getElementById('audio-status').textContent = '✅ 음원 재생 종료됨';
+                document.getElementById('audio-status').style.color = 'var(--color-primary)';
+                document.getElementById('audio-start-button').classList.add('hidden');
+                audio.volume = originalVolume; 
+            });
+        }
+        // --- End Audio Control Logic ---
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuestions();
+        });
+
+        function renderQuestions() {
+            const quizForm = document.getElementById('quiz-form');
+            quizForm.innerHTML = questionsData.map(q => {
+                let content = `<p class="mb-4">${q.text}</p>`;
+                if (q.qNum === 9) {
+                    content = q.text; 
+                } else if (q.qNum === 15) {
+                    content = `<div class="overflow-x-auto text-sm">${q.text}</div>`;
+                }
+
+                return `
+                    <div id="q-${q.qNum}" class="question-card opacity-60">
+                        <h3 class="text-lg font-bold mb-4" style="color: var(--color-primary);">
+                            문항 ${q.qNum}.
+                        </h3>
+                        ${content}
+                        <div class="space-y-2 mt-4">
+                            ${q.options.map((option, index) => {
+                                const optionValue = index + 1;
+                                return `
+                                    <input type="radio" id="q${q.qNum}-o${optionValue}" name="q${q.qNum}" value="${optionValue}" class="hidden" data-q-num="${q.qNum}" disabled>
+                                    <label for="q${q.qNum}-o${optionValue}"
+                                        class="option-label block w-full">
+                                        ${option}
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Attach a click security warning to all labels/radios
+            document.querySelectorAll('.option-label').forEach(label => {
+                label.addEventListener('click', (e) => {
+                    if (!interactionEnabled) {
+                        e.preventDefault();
+                        const modal = document.getElementById('security-modal');
+                        document.getElementById('modal-title').textContent = '[경고] 응시 규정 위반 감지';
+                        document.getElementById('modal-text-1').textContent = `음원 재생 시작 후 ${INTERACTION_DELAY_SEC}초 이후에만 문제 풀이가 허용됩니다.`;
+                        document.getElementById('modal-text-2').textContent = '규정을 준수하여 주십시오.';
+                        document.getElementById('modal-button').textContent = '확인 및 응시 계속';
+                        modal.style.display = 'flex';
+                    }
+                });
+            });
+        }
+
+        function submitQuiz(event) {
+            event.preventDefault();
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.style.display = 'flex'; // 2초 로딩 시작
+
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none'; // 2초 후 로딩 종료
+                
+                // 실제 채점 및 결과 표시 로직
+                const form = document.getElementById('quiz-form');
+                const resultsArea = document.getElementById('results-area');
+                let score = 0;
+                const totalQuestions = questionsData.length;
+                const userResults = [];
+
+                // 1. Process Answers
+                questionsData.forEach(q => {
+                    const selectedOption = form.elements[`q${q.qNum}`].value;
+                    const userChoice = selectedOption ? parseInt(selectedOption) : null;
+                    const isCorrect = userChoice === q.answer;
+
+                    if (isCorrect) {
+                        score++;
+                    }
+
+                    userResults.push({
+                        qNum: q.qNum,
+                        correct: q.answer,
+                        user: userChoice,
+                        isCorrect: isCorrect
+                    });
+                    
+                    // Disable all inputs after submission
+                    document.querySelectorAll(`#q-${q.qNum} input[type="radio"]`).forEach(input => input.disabled = true);
+                });
+                
+                // 2. Generate Report Card HTML
+                const percentage = ((score / totalQuestions) * 100).toFixed(1);
+                
+                let tableRows = userResults.map(result => {
+                    const statusText = result.user === null ? '미응시' : (result.isCorrect ? 'O' : 'X');
+                    const rowClass = result.user === null ? 'unanswered-bg' : (result.isCorrect ? 'correct-bg' : 'wrong-bg');
+                    const userText = result.user === null ? '미선택' : `${result.user}번`;
+
+                    return `
+                        <tr class="${rowClass}">
+                            <td>${result.qNum}</td>
+                            <td>${result.correct}번</td>
+                            <td>${userText}</td>
+                            <td>${statusText}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const reportCardHTML = `
+                    <div class="p-6">
+                        <h2 class="report-title">영어 듣기 능력 평가 시험 결과표</h2>
+                        
+                        <div class="summary-box">
+                            <div class="summary-item">총 문항 수: ${totalQuestions} 문항</div>
+                            <div class="summary-item">득점 문항 수: ${score} 문항</div>
+                            <div class="summary-item">정답률: ${percentage}%</div>
+                        </div>
+
+                        <p class="text-lg font-bold mb-3" style="color: var(--color-primary);">[상세 응시 결과]</p>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:10%;">문항 번호</th>
+                                    <th style="width:20%;">정답</th>
+                                    <th style="width:20%;">응시 답안</th>
+                                    <th style="width:20%;">결과</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                        
+                        <div class="text-center mt-8">
+                            <button onclick="resetQuiz()"
+                                class="btn-base bg-gray-600 hover:bg-gray-700">
+                                새로운 응시 시작 (초기화)
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // 3. Display Results
+                resultsArea.innerHTML = reportCardHTML;
+                resultsArea.classList.remove('hidden');
+                
+                // 4. Highlight cards in the quiz section (visual feedback)
+                userResults.forEach(result => {
+                    const qElement = document.getElementById(`q-${result.qNum}`);
+                    qElement.classList.remove('active-interaction', 'opacity-60');
+                    if (result.isCorrect) {
+                        qElement.classList.add('correct-answer-card');
+                    } else if (result.user !== null) {
+                        qElement.classList.add('wrong-answer-card');
+                    } else {
+                        qElement.classList.add('unanswered-card');
+                    }
+                });
+
+                resultsArea.scrollIntoView({ behavior: 'smooth' });
+            }, 2000); // 2초 지연
+        }
+
+        function resetQuiz() {
+            const form = document.getElementById('quiz-form');
+            form.reset();
+            const resultsArea = document.getElementById('results-area');
+            const startButton = document.getElementById('audio-start-button');
+            const statusText = document.getElementById('audio-status');
+            
+            // Reset audio state
+            audio.load(); 
+            lastValidTime = 0;
+            isAudioPlaying = false;
+            interactionEnabled = false;
+            audio.volume = originalVolume; 
+
+            // Reset status text
+            statusText.textContent = '※ 재생 버튼을 누른 후에는 일시 정지/되감기가 규정 상 제한됩니다.'; // 수정된 텍스트
+            statusText.style.color = '#333';
+            startButton.classList.remove('hidden');
+            startButton.disabled = false;
+
+            questionsData.forEach(q => {
+                const questionElement = document.getElementById(`q-${q.qNum}`);
+                questionElement.classList.remove('correct-answer-card', 'wrong-answer-card', 'unanswered-card', 'active-interaction');
+                questionElement.classList.add('opacity-60');
+                
+                q.options.forEach((optionText, index) => {
+                    const labelElement = document.querySelector(`#q-${q.qNum} label[for='q${q.qNum}-o${index+1}']`);
+                    const inputElement = document.getElementById(`q${q.qNum}-o${index+1}`);
+                    
+                    labelElement.classList.remove('user-selected', 'font-bold');
+                    labelElement.style.backgroundColor = '#ffffff'; 
+                    labelElement.style.borderColor = '#ced4da';
+                    inputElement.disabled = true; // Disabled until audio starts/40sec passes
+                });
+            });
+
+            resultsArea.classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
